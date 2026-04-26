@@ -80,6 +80,27 @@
   .pinfo{font-size:13px;color:#64748b}
   .loading{text-align:center;padding:80px;font-size:18px;color:#64748b}
   @media(max-width:700px){.charts2{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(2,1fr)}}
+
+  /* RISK MAP — schema attori */
+  .riskmap{background:white;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:24px}
+  .riskmap h2{font-size:18px;font-weight:700;margin-bottom:6px;color:#0f172a;display:flex;align-items:center;gap:8px}
+  .riskmap .intro{font-size:13px;color:#64748b;margin-bottom:20px;line-height:1.5}
+  .chain{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+  .actor{background:#f8fafc;border-radius:10px;padding:18px;border-top:4px solid #16a34a;position:relative}
+  .actor.seller{border-top-color:#dc2626}
+  .actor.courier{border-top-color:#d97706}
+  .actor.buyer{border-top-color:#2563eb}
+  .actor h3{font-size:15px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .actor .role{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+  .actor ul{list-style:none}
+  .actor li{font-size:13px;padding:7px 10px;border-radius:6px;color:#475569;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:6px}
+  .actor li:hover{background:#16a34a;color:white}
+  .actor li::before{content:"▸";color:#94a3b8;font-size:11px}
+  .actor li:hover::before{color:white}
+  .extras{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .extras .actor{border-top-color:#7c3aed}
+  .extras .actor.external{border-top-color:#0891b2}
+  @media(max-width:800px){.chain,.extras{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -105,6 +126,72 @@
 <div class="container">
   <div id="loading" class="loading">Caricamento dati...</div>
   <div id="app" style="display:none">
+
+    <!-- RISK MAP -->
+    <div class="riskmap">
+      <h2>🛡️ Mappa dei rischi nella compravendita C2C</h2>
+      <div class="intro">Tutti i punti dove può rompersi una transazione tra privati online — dal momento dell'annuncio alla risoluzione di un'eventuale controversia. Clicca su una voce per filtrare i record che la riguardano.</div>
+      <div class="chain">
+        <div class="actor seller">
+          <h3>🏪 Venditore</h3>
+          <div class="role">truffe contro il compratore</div>
+          <ul>
+            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Pacco mai spedito</li>
+            <li onclick="filterByIssueAndJump('pacco_vuoto')">Pacco vuoto reale</li>
+            <li onclick="filterByIssueAndJump('oggetto_falso')">Articolo contraffatto</li>
+            <li onclick="filterByIssueAndJump('oggetto_diverso')">Articolo diverso da foto</li>
+            <li onclick="filterByIssueAndJump('oggetto_falso')">Foto fake / generate da AI</li>
+            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Venditore sparito</li>
+          </ul>
+        </div>
+        <div class="actor courier">
+          <h3>📦 Corriere</h3>
+          <div class="role">problemi del trasporto</div>
+          <ul>
+            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Pacco smarrito</li>
+            <li onclick="filterByIssueAndJump('oggetto_danneggiato')">Pacco danneggiato in transito</li>
+            <li onclick="filterByIssueAndJump('pacco_vuoto')">Manomissione del pacco</li>
+            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Consegna a indirizzo sbagliato</li>
+            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Locker / punto ritiro problematico</li>
+          </ul>
+        </div>
+        <div class="actor buyer">
+          <h3>🛒 Compratore</h3>
+          <div class="role">truffe contro il venditore</div>
+          <ul>
+            <li onclick="filterByIssueAndJump('pacco_vuoto')">Reclamo falso "pacco vuoto"</li>
+            <li onclick="filterByIssueAndJump('controversia_persa')">Controversia fittizia</li>
+            <li onclick="filterByIssueAndJump('oggetto_diverso')">Sostituzione dell'articolo</li>
+            <li onclick="filterByIssueAndJump('oggetto_danneggiato')">Danneggiamento volontario</li>
+            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Mancato ritiro per ottenere rimborso</li>
+          </ul>
+        </div>
+      </div>
+      <div class="extras">
+        <div class="actor">
+          <h3>⚠️ Piattaforma</h3>
+          <div class="role">criticità del marketplace</div>
+          <ul>
+            <li onclick="filterByIssueAndJump('pagamento_mancante')">Account bloccato con fondi dentro</li>
+            <li onclick="filterByIssueAndJump('controversia_persa')">Rimborso negato senza spiegazioni</li>
+            <li onclick="filterByIssueAndJump('pagamento_mancante')">Pagamento al venditore mai sbloccato</li>
+            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Supporto clienti irraggiungibile</li>
+            <li onclick="filterByIssueAndJump('controversia_persa')">Decisione automatica senza prove</li>
+          </ul>
+        </div>
+        <div class="actor external">
+          <h3>🎭 Truffatori esterni</h3>
+          <div class="role">attacchi via email / link / phishing</div>
+          <ul>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Phishing email che simula la piattaforma</li>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Link finti di "verifica pagamento"</li>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Bonifico fuori piattaforma</li>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Falso supporto Vinted via SMS</li>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Furto credenziali bancarie</li>
+          </ul>
+        </div>
+      </div>
+    </div>
 
     <!-- STATS -->
     <div class="stats">
@@ -482,6 +569,18 @@ function showTab(name) {
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
+}
+
+// Click su una voce della mappa rischi → filtra "Tutti i Record" per issue_type
+function filterByIssueAndJump(issue) {
+  showTab('all');
+  document.getElementById('search').value = '';
+  document.getElementById('f-source').value = '';
+  document.getElementById('f-product').value = '';
+  document.getElementById('f-country').value = '';
+  document.getElementById('f-issue').value = issue;
+  renderAll();
+  document.querySelector('#tab-all').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 // LOAD — cache-buster: forza il fetch del CSV ad ogni reload
