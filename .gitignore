@@ -1,0 +1,6 @@
+.claude/
+collector/
+scraper.py
+vinted_complaints.csv
+data/collector.log
+data/state.json

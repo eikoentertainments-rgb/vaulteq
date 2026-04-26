@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melion — Dashboard Dati</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f5f9;color:#0f172a}
+  header{background:#16a34a;color:white;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:20px;font-weight:700}
+  header .sub{font-size:13px;opacity:.8;margin-top:2px}
+  .container{max-width:1400px;margin:0 auto;padding:28px 24px}
+
+  /* STATS */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px}
+  .stat{background:white;border-radius:12px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .stat .n{font-size:32px;font-weight:800;color:#16a34a}
+  .stat .l{font-size:12px;color:#64748b;margin-top:3px}
+
+  /* TABS */
+  .tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid #e2e8f0;overflow-x:auto}
+  .tab{padding:10px 20px;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px}
+  .tab:hover{color:#16a34a}
+  .tab.active{color:#16a34a;border-bottom-color:#16a34a}
+  .tabs-wrap{background:white;border-radius:12px 12px 0 0;padding:0 8px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+  /* PANEL */
+  .panel{background:white;border-radius:0 0 12px 12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:24px;display:none}
+  .panel.active{display:block}
+
+  /* CHARTS */
+  .charts2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+  .chart-card{background:#f8fafc;border-radius:10px;padding:20px}
+  .chart-card h4{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+  .chart-card canvas{max-height:240px}
+
+  /* CATEGORY GRID */
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+  .cat-card{background:#f8fafc;border-radius:10px;padding:16px;cursor:pointer;border:2px solid transparent;transition:all .15s}
+  .cat-card:hover,.cat-card.active{border-color:#16a34a;background:white}
+  .cat-card .cat-n{font-size:26px;font-weight:800;color:#16a34a}
+  .cat-card .cat-l{font-size:13px;color:#475569;margin-top:2px}
+  .cat-card .cat-pct{font-size:11px;color:#94a3b8;margin-top:2px}
+
+  /* TABLE */
+  .table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .table-header h3{font-size:14px;font-weight:600;color:#0f172a}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .filters input,.filters select{padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none;background:white}
+  .filters input:focus,.filters select:focus{border-color:#16a34a}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:9px 12px;background:#f8fafc;border-bottom:2px solid #e2e8f0;font-weight:600;color:#64748b;font-size:11px;text-transform:uppercase}
+  td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+  tr:hover td{background:#f8fafc}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .issue-badge{background:#fef2f2;color:#991b1b}
+  .prod-badge{background:#f0fdf4;color:#166534}
+  .src-badge{background:#f1f5f9;color:#475569}
+  .text-cell{max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569;cursor:pointer}
+  .text-cell:hover{color:#16a34a;text-decoration:underline}
+  tr{cursor:pointer}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:white;border-radius:16px;padding:28px;max-width:620px;width:90%;max-height:80vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal-close{position:absolute;top:16px;right:18px;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;border:none;background:none}
+  .modal-close:hover{color:#0f172a}
+  .modal h3{font-size:16px;font-weight:700;margin-bottom:16px;padding-right:24px;color:#0f172a}
+  .modal-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .modal-text{font-size:14px;line-height:1.7;color:#334155;white-space:pre-wrap;background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e2e8f0}
+  .modal-link{display:inline-block;margin-top:14px;font-size:13px;color:#16a34a;text-decoration:none;font-weight:600}
+  .modal-link:hover{text-decoration:underline}
+  .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+  .pagination button{padding:6px 14px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:13px}
+  .pagination button:hover{background:#f8fafc}
+  .pinfo{font-size:13px;color:#64748b}
+  .loading{text-align:center;padding:80px;font-size:18px;color:#64748b}
+  @media(max-width:700px){.charts2{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Melion — Dashboard Reclami Vinted</h1>
+    <div class="sub" id="hdr-sub">Caricamento...</div>
+  </div>
+</header>
+
+<!-- MODAL POST COMPLETO -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modal-title"></h3>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-text" id="modal-text"></div>
+    <a class="modal-link" id="modal-link" target="_blank" style="display:none">→ Vai alla fonte originale</a>
+  </div>
+</div>
+
+<div class="container">
+  <div id="loading" class="loading">Caricamento dati...</div>
+  <div id="app" style="display:none">
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat"><div class="n" id="s1">0</div><div class="l">Record totali</div></div>
+      <div class="stat"><div class="n" id="s2">0</div><div class="l">Fonti attive</div></div>
+      <div class="stat"><div class="n" id="s3">0</div><div class="l">Paesi coperti</div></div>
+      <div class="stat"><div class="n" id="s4">0</div><div class="l">Tipi di problema</div></div>
+      <div class="stat"><div class="n" id="s5">0</div><div class="l">Categorie prodotto</div></div>
+      <div class="stat"><div class="n" id="s6">0</div><div class="l">Aggiunti oggi</div></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <div class="tab active" onclick="showTab('overview')">Panoramica</div>
+        <div class="tab" onclick="showTab('problems')">Per Problema</div>
+        <div class="tab" onclick="showTab('products')">Per Prodotto</div>
+        <div class="tab" onclick="showTab('all')">Tutti i Record</div>
+      </div>
+    </div>
+
+    <!-- TAB: OVERVIEW -->
+    <div class="panel active" id="tab-overview">
+      <div class="charts2">
+        <div class="chart-card"><h4>Tipo di Problema</h4><canvas id="c-issue"></canvas></div>
+        <div class="chart-card"><h4>Fonte</h4><canvas id="c-source"></canvas></div>
+      </div>
+      <div class="charts2">
+        <div class="chart-card"><h4>Paese (top 12)</h4><canvas id="c-country"></canvas></div>
+        <div class="chart-card"><h4>Andamento nel Tempo</h4><canvas id="c-timeline"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TAB: PROBLEMI -->
+    <div class="panel" id="tab-problems">
+      <div class="cat-grid" id="problem-grid"></div>
+      <div id="problem-table-wrap" style="display:none">
+        <div class="table-header">
+          <h3 id="problem-title"></h3>
+          <button onclick="clearProblemFilter()" style="padding:6px 14px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:13px">← Tutti i problemi</button>
+        </div>
+        <div id="problem-table-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB: PRODOTTI -->
+    <div class="panel" id="tab-products">
+      <div class="cat-grid" id="product-grid"></div>
+      <div id="product-table-wrap" style="display:none">
+        <div class="table-header">
+          <h3 id="product-title"></h3>
+          <button onclick="clearProductFilter()" style="padding:6px 14px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:13px">← Tutte le categorie</button>
+        </div>
+        <div id="product-table-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB: TUTTI -->
+    <div class="panel" id="tab-all">
+      <div class="filters">
+        <input type="text" id="search" placeholder="Cerca nel testo..." oninput="renderAll()">
+        <select id="f-source" onchange="renderAll()"><option value="">Tutte le fonti</option></select>
+        <select id="f-issue" onchange="renderAll()"><option value="">Tutti i problemi</option></select>
+        <select id="f-product" onchange="renderAll()"><option value="">Tutte le categorie</option></select>
+        <select id="f-country" onchange="renderAll()"><option value="">Tutti i paesi</option></select>
+      </div>
+      <div id="all-table-container"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let ALL = [], filteredAll = [], allPage = 1;
+let _modalRows = [];
+
+function openModal(idx) {
+  const r = _modalRows[idx];
+  if (!r) return;
+  document.getElementById('modal-title').textContent =
+    (ISSUE_LABELS[r.issue_type] || r.issue_type || 'Post') + ' — ' + (r.source || '');
+  document.getElementById('modal-meta').innerHTML = [
+    r.date ? `<span class="badge src-badge">${r.date}</span>` : '',
+    r.country ? `<span class="badge src-badge">${r.country}</span>` : '',
+    r.product_category && r.product_category !== 'undefined'
+      ? `<span class="badge prod-badge">${PROD_LABELS[r.product_category]||r.product_category}</span>` : '',
+    r.username && r.username !== 'anon'
+      ? `<span class="badge src-badge">@${r.username}</span>` : '',
+  ].filter(Boolean).join('');
+  document.getElementById('modal-text').textContent = r.text || '';
+  const link = document.getElementById('modal-link');
+  if (r.url) { link.href = r.url; link.style.display = 'inline-block'; }
+  else { link.style.display = 'none'; }
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal')) return;
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+const PER = 50;
+const COLORS = ['#16a34a','#dc2626','#2563eb','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#ea580c','#0284c7','#6366f1','#f59e0b'];
+
+const ISSUE_LABELS = {
+  pacco_vuoto:'📦 Pacco vuoto', oggetto_falso:'🎭 Oggetto falso',
+  oggetto_diverso:'🔄 Oggetto diverso', oggetto_danneggiato:'💔 Oggetto danneggiato',
+  pacco_non_arrivato:'🚚 Pacco non arrivato', controversia_persa:'⚖️ Controversia persa',
+  truffa_generica:'🚨 Truffa', venditore_non_risponde:'🔕 Venditore non risponde',
+  pagamento_mancante:'💸 Pagamento mancante', altro:'❓ Altro'
+};
+const PROD_LABELS = {
+  abbigliamento:'👕 Abbigliamento', scarpe:'👟 Scarpe', borse_accessori:'👜 Borse & Accessori',
+  elettronica:'📱 Elettronica', cosmetici_profumi:'💄 Cosmetici & Profumi',
+  casa_arredamento:'🏠 Casa & Arredamento', sport_outdoor:'⚽ Sport & Outdoor',
+  bambini_giocattoli:'🧸 Bambini & Giocattoli', libri_media:'📚 Libri & Media',
+  undefined:'❓ Non classificato'
+};
+
+function count(arr, key) {
+  const m = {};
+  arr.forEach(r => { const v = r[key]||'altro'; m[v]=(m[v]||0)+1; });
+  return m;
+}
+
+function makeChart(id, type, labels, data) {
+  const ctx = document.getElementById(id).getContext('2d');
+  new Chart(ctx, {
+    type, data: {
+      labels,
+      datasets:[{data, backgroundColor:COLORS.slice(0,labels.length), borderWidth:type==='doughnut'?2:0, borderColor:'#fff', borderRadius:type==='bar'?5:0}]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:type==='doughnut'?'right':'none', labels:{font:{size:11},boxWidth:10}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw.toLocaleString()}`}}
+      },
+      scales:type==='bar'?{y:{beginAtZero:true,grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}:{}
+    }
+  });
+}
+
+function renderStats(data) {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('s1').textContent = data.length.toLocaleString();
+  document.getElementById('s2').textContent = new Set(data.map(r=>r.source)).size;
+  document.getElementById('s3').textContent = new Set(data.map(r=>r.country).filter(Boolean)).size;
+  document.getElementById('s4').textContent = new Set(data.map(r=>r.issue_type).filter(Boolean)).size;
+  document.getElementById('s5').textContent = new Set(data.map(r=>r.product_category).filter(v=>v&&v!=='undefined')).size;
+  document.getElementById('s6').textContent = data.filter(r=>(r.collected_at||'').startsWith(today)||(r.date||'')=== today).length.toLocaleString();
+  document.getElementById('hdr-sub').textContent = `${data.length.toLocaleString()} record · aggiornato ${new Date().toLocaleString('it-IT')}`;
+}
+
+function renderOverview(data) {
+  const issues = count(data,'issue_type');
+  const iLabels = Object.keys(issues).sort((a,b)=>issues[b]-issues[a]);
+  makeChart('c-issue','doughnut',iLabels.map(k=>ISSUE_LABELS[k]||k),iLabels.map(k=>issues[k]));
+
+  const srcs = count(data,'source');
+  const sLabels = Object.keys(srcs).sort((a,b)=>srcs[b]-srcs[a]);
+  makeChart('c-source','bar',sLabels,sLabels.map(k=>srcs[k]));
+
+  const ctrs = count(data,'country');
+  const cLabels = Object.keys(ctrs).sort((a,b)=>ctrs[b]-ctrs[a]).slice(0,12);
+  makeChart('c-country','bar',cLabels,cLabels.map(k=>ctrs[k]));
+
+  const byM = {};
+  data.forEach(r=>{ const m=(r.date||'').slice(0,7); if(m) byM[m]=(byM[m]||0)+1; });
+  const months = Object.keys(byM).sort();
+  makeChart('c-timeline','bar',months,months.map(m=>byM[m]));
+}
+
+function renderCatGrid(containerId, catMap, labelMap, onClickFn) {
+  const total = Object.values(catMap).reduce((a,b)=>a+b,0);
+  const sorted = Object.keys(catMap).sort((a,b)=>catMap[b]-catMap[a]);
+  document.getElementById(containerId).innerHTML = sorted.map(k => `
+    <div class="cat-card" onclick="${onClickFn}('${k}')">
+      <div class="cat-n">${catMap[k].toLocaleString()}</div>
+      <div class="cat-l">${labelMap[k]||k}</div>
+      <div class="cat-pct">${((catMap[k]/total)*100).toFixed(1)}% del totale</div>
+    </div>
+  `).join('');
+}
+
+function makeTable(records, page, perPage, containerId, onPageChange) {
+  const start = (page-1)*perPage;
+  const slice = records.slice(start, start+perPage);
+  const pages = Math.ceil(records.length/perPage);
+  _modalRows = slice;
+  document.getElementById(containerId).innerHTML = `
+    <table>
+      <thead><tr><th>Fonte</th><th>Data</th><th>Paese</th><th>Problema</th><th>Prodotto</th><th>Testo</th></tr></thead>
+      <tbody>${slice.map((r,i)=>`
+        <tr onclick="openModal(${i})">
+          <td><span class="badge src-badge">${r.source||'-'}</span></td>
+          <td style="white-space:nowrap;color:#475569">${r.date||'-'}</td>
+          <td style="font-weight:600">${r.country||'-'}</td>
+          <td><span class="badge issue-badge">${ISSUE_LABELS[r.issue_type]||r.issue_type||'-'}</span></td>
+          <td><span class="badge prod-badge">${PROD_LABELS[r.product_category]||r.product_category||'❓'}</span></td>
+          <td><div class="text-cell">${r.text||'-'}</div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="pagination">
+      <div class="pinfo">${start+1}–${Math.min(start+perPage,records.length)} di ${records.length.toLocaleString()} record</div>
+      <div style="display:flex;gap:8px">
+        ${page>1?`<button onclick="${onPageChange}(${page-1})">← Indietro</button>`:''}
+        ${page<pages?`<button onclick="${onPageChange}(${page+1})">Avanti →</button>`:''}
+      </div>
+    </div>`;
+}
+
+// PROBLEMS TAB
+let problemFilter = null, problemPage = 1;
+function filterByProblem(issue) {
+  problemFilter = issue;
+  problemPage = 1;
+  document.getElementById('problem-grid').style.display = 'none';
+  document.getElementById('problem-table-wrap').style.display = 'block';
+  document.getElementById('problem-title').textContent = ISSUE_LABELS[issue]||issue;
+  const filtered = ALL.filter(r=>r.issue_type===issue);
+  makeTable(filtered, problemPage, PER, 'problem-table-container', 'problemGoPage');
+}
+function problemGoPage(p) { problemPage=p; filterByProblem(problemFilter); window.scrollTo({top:200,behavior:'smooth'}); }
+function clearProblemFilter() {
+  problemFilter=null;
+  document.getElementById('problem-grid').style.display = 'grid';
+  document.getElementById('problem-table-wrap').style.display = 'none';
+}
+
+// PRODUCTS TAB
+let productFilter = null, productPage = 1;
+function filterByProduct(cat) {
+  productFilter = cat;
+  productPage = 1;
+  document.getElementById('product-grid').style.display = 'none';
+  document.getElementById('product-table-wrap').style.display = 'block';
+  document.getElementById('product-title').textContent = PROD_LABELS[cat]||cat;
+  const filtered = ALL.filter(r=>r.product_category===cat);
+  makeTable(filtered, productPage, PER, 'product-table-container', 'productGoPage');
+}
+function productGoPage(p) { productPage=p; filterByProduct(productFilter); window.scrollTo({top:200,behavior:'smooth'}); }
+function clearProductFilter() {
+  productFilter=null;
+  document.getElementById('product-grid').style.display = 'grid';
+  document.getElementById('product-table-wrap').style.display = 'none';
+}
+
+// ALL TAB
+function renderAll() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const fs = document.getElementById('f-source').value;
+  const fi = document.getElementById('f-issue').value;
+  const fp = document.getElementById('f-product').value;
+  const fc = document.getElementById('f-country').value;
+  filteredAll = ALL.filter(r=>{
+    if(fs && r.source!==fs) return false;
+    if(fi && r.issue_type!==fi) return false;
+    if(fp && r.product_category!==fp) return false;
+    if(fc && r.country!==fc) return false;
+    if(q && !(r.text||'').toLowerCase().includes(q) && !(r.username||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  allPage = 1;
+  makeTable(filteredAll, allPage, PER, 'all-table-container', 'allGoPage');
+}
+function allGoPage(p) { allPage=p; makeTable(filteredAll,allPage,PER,'all-table-container','allGoPage'); window.scrollTo({top:200,behavior:'smooth'}); }
+
+function populateFilters(data) {
+  const add = (selId, values) => {
+    const sel = document.getElementById(selId);
+    [...new Set(values)].filter(Boolean).sort().forEach(v=>sel.innerHTML+=`<option value="${v}">${v}</option>`);
+  };
+  add('f-source', data.map(r=>r.source));
+  add('f-issue', data.map(r=>r.issue_type));
+  add('f-product', data.map(r=>r.product_category));
+  add('f-country', data.map(r=>r.country));
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','problems','products','all'][i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// LOAD
+Papa.parse('data/vinted_complaints.csv', {
+  download:true, header:true, skipEmptyLines:true,
+  complete(results) {
+    ALL = results.data;
+    filteredAll = [...ALL];
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+
+    renderStats(ALL);
+    renderOverview(ALL);
+
+    const issues = count(ALL,'issue_type');
+    renderCatGrid('problem-grid', issues, ISSUE_LABELS, 'filterByProblem');
+
+    const prods = count(ALL,'product_category');
+    renderCatGrid('product-grid', prods, PROD_LABELS, 'filterByProduct');
+
+    populateFilters(ALL);
+    renderAll();
+
+    setTimeout(()=>location.reload(), 300000);
+  },
+  error() {
+    document.getElementById('loading').innerHTML='⚠️ Apri dal server: <b>http://localhost:3000/dashboard.html</b>';
+  }
+});
+</script>
+</body>
+</html>
