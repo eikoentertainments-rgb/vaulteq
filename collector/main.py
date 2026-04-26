@@ -29,6 +29,7 @@ MAX_PER_SOURCE = {        # limite per ciclo per bilanciare le fonti
     "instagram_search":  400,
     "tiktok_search":     400,
     "trustpilot_search": 400,
+    "web_article":       150,
     "google_news":     300,
     "forum_it":        300,
     "forum_fr":        300,
@@ -97,7 +98,7 @@ MIN_DATE    = "2022-01-01"   # post 2022+; ante-2022 accettati solo se >= 50 par
 PRE22_WORDS = 50
 
 # ── CSV WRITER (append progressivo) ─────
-FIELDNAMES = ["source","username","date","country","rating","issue_type","product_category","platform","text","url","collected_at"]
+FIELDNAMES = ["source","username","date","country","rating","issue_type","product_category","platform","actor","text","url","collected_at"]
 
 def init_csv():
     if not os.path.exists(OUTPUT):
@@ -142,6 +143,257 @@ def classify_platform(text, url=""):
     if "back market" in t or "backmarket" in t: return "back_market"
     if "vide dressing" in t or "videdressing" in t: return "vide_dressing"
     return "other"
+
+# ── CLASSIFICATORE ATTORE (compratore vs venditore) ──
+import re as _re_actor
+
+_BUYER_PATTERNS = [
+    # ── ITALIANO ──
+    r'\bho compr', r'\bho acquist', r'\bho ricevut', r'\bho ordinat',
+    r'\bil venditore\b', r'\bla venditrice\b', r'pacco (?:è|e) arrivat',
+    r'\bmi (?:è|e) arrivat', r'\bnon (?:mi )?(?:è|e) (?:mai )?arrivat',
+    r'\bnon ho ricevut', r'\bnon ho mai ricevut',
+    r'\bsono (?:il )?compratore\b', r"\bsono (?:l['']?)?acquirente\b",
+    r'\bda compratore\b', r'\bda acquirente\b',
+    r'\bquesto venditore\b', r'\bil venditore (?:mi|non|ha|si)',
+    r'\bricevuto un (?:falso|articolo|prodotto|pacco)',
+    r'\bho aperto controversia\b',
+    # ── INGLESE ──
+    r'\bi bought\b', r'\bi purchased\b', r'\bi received\b', r'\bi ordered\b',
+    r'\bi got\b.{0,30}\b(?:scammed|ripped off|item|package)',
+    r'\bi was scammed\b', r"\bi['']ve been scammed\b",
+    r'\bscammed me\b', r"\bripped me off\b",
+    r'\bthe seller\b', r'\bthis seller\b', r'\bmy seller\b',
+    r"\bi['']m a buyer\b", r'\bas a buyer\b', r"\bi['']m the buyer\b",
+    r'\bbought (?:a|an|the|some)\b', r'\bpurchased (?:a|an|the)\b',
+    r'\breceived (?:a |an |the |fake|empty|damaged|wrong|counterfeit)',
+    r'\barrived (?:empty|damaged|broken|fake)',
+    r'\bnever arrived\b', r"\bdidn['']t arrive\b", r"\bdidn['']t receive\b",
+    r"\bhaven['']t received\b", r'\bnot received\b',
+    r'\bi opened (?:a |the )?(?:dispute|case|claim)',
+    r'\bi paid (?:for|the)\b', r'\bpaid for (?:an?|the)\b',
+    r'\btried to buy\b', r'\bwhen i bought\b', r'\bafter buying\b',
+    r'\bordered (?:a |an |the |some )', r'\bbought from\b', r'\bbought it from\b',
+    r'\bthey sent me\b', r'\bthey gave me\b', r'\bthey shipped\b',
+    r'\bmy order\b', r'\bmy purchase\b', r'\bmy package\b', r'\bmy parcel\b',
+    r'\bi was sold\b', r'\bi got sold\b', r'\bsold me\b', r'\bsent me (?:a |the )?(?:fake|wrong|broken|empty|different|counterfeit)',
+    r'\b(?:è|e) arrivat(?:o|a) (?:il|un|una|la|vuot|rott|dann)',
+    r'\bmi hanno (?:venduto|spedito|inviato|mandato)',
+    r'\bquando ho compr', r'\bappena compr', r'\bdopo aver compr',
+    r'\barrivò\b', r'\bcomprai\b', r'\bordinai\b',
+    # ── FRANCESE ──
+    r"\bj['']ai achet", r"\bj['']ai reçu", r"\bj['']ai command",
+    r'\ble vendeur\b', r'\bce vendeur\b', r'\bmon vendeur\b',
+    r"\bje n['']ai (?:pas |jamais )?reçu\b", r"\bjamais reçu\b",
+    r"\bj['']ai été arnaqué", r'\bcomme acheteur\b',
+    r'\barrivé vide\b', r'\barrivé endommag',
+    # ── SPAGNOLO ──
+    r'\bcompré\b', r'\bhe comprado\b', r'\brecibí\b', r'\bhe recibido\b',
+    r'\bel vendedor\b', r'\beste vendedor\b', r'\bcomo comprador\b',
+    r'\bme estafaron\b', r'\bme robaron\b', r'\bnunca llegó\b',
+    r'\bno (?:lo |me )?recibí\b',
+    # ── TEDESCO ──
+    r'\bich habe gekauft\b', r'\bich habe bestellt\b', r'\bich habe erhalten\b',
+    r'\bich kaufte\b', r'\bder verkäufer\b', r'\bdieser verkäufer\b',
+    r'\bnie (?:angekommen|erhalten)\b', r'\bnicht angekommen\b',
+    r'\bals käufer\b', r'\bich wurde betrogen\b',
+    # ── POLACCO ──
+    r'\bkupiłem\b', r'\bkupiłam\b', r'\bzamówiłem\b', r'\bzamówiłam\b',
+    r'\bsprzedawca\b', r'\bjako kupujący\b', r'\botrzymałem\b', r'\botrzymałam\b',
+    r'\bnie dotarło\b', r'\bnie otrzymałem\b',
+    # ── OLANDESE ──
+    r'\bik heb gekocht\b', r'\bik heb ontvangen\b', r'\bik heb besteld\b',
+    r'\bde verkoper\b', r'\bnooit aangekomen\b', r'\bniet ontvangen\b',
+    # ── CECO ──
+    r'\bkoupil jsem\b', r'\bkoupila jsem\b', r'\bobjednal jsem\b',
+    r'\bobjednala jsem\b', r'\bprodávající\b', r'\bnedorazil\b', r'\bneobdržel\b',
+    # ── LITUANO ──
+    r'\bnusipirkau\b', r'\bužsisakiau\b', r'\bpardavėjas\b',
+    r'\bgavau\b', r'\bnegavau\b',
+]
+
+_SELLER_PATTERNS = [
+    # ── ITALIANO ──
+    r'\bho vendut', r'\bho spedit', r'\bho mandat', r'\bho inviat',
+    r"\bl['']acquirente\b", r'\bil compratore\b', r'\bla compratrice\b',
+    r'\bquesto compratore\b', r'\bil cliente\b',
+    r'\bstavo vendendo\b', r'\bsono venditore\b', r'\bsono venditrice\b',
+    r'\bda venditore\b', r'\bda venditrice\b', r'\bcome venditore\b',
+    r'\bmio account\b.{0,30}(?:bloccat|sospes|bannat)',
+    r'\baccount bloccato\b', r'\bsaldo bloccato\b', r'\bfondi bloccati\b',
+    r'\bnon (?:vengo |sono )?pagat',
+    r"\bl['']acquirente (?:dice|afferma|sostiene|mi|ha)",
+    r'\bdopo (?:aver )?vendut', r'\bdopo (?:aver )?spedit',
+    r'\bil pacco mi (?:è|e) tornato\b',
+    # ── INGLESE ──
+    r'\bi sold\b', r'\bi shipped\b', r'\bi sent\b.{0,30}\b(?:the|a|an|it|item|package)',
+    r'\bthe buyer\b', r'\bthis buyer\b', r'\bmy buyer\b',
+    r'\ba buyer (?:claim|said|requested|opened|wants|sent)',
+    r"\bi['']m a seller\b", r'\bas a seller\b',
+    r'\bbuyer claims?\b', r'\bbuyer says?\b', r'\bbuyer opened\b',
+    r'\bbuyer requested\b', r'\bhad to refund\b',
+    r'\bmy account (?:got |was )?(?:blocked|banned|suspended)',
+    r'\bsales account\b', r'\bseller account\b',
+    r'\bafter selling\b', r'\bwhile selling\b', r'\bi was selling\b',
+    r'\bclaimed (?:the )?(?:box|package|parcel) (?:was )?empty',
+    r"\bcouldn['']t (?:get )?(?:my|the) (?:money|funds|payment)",
+    r'\bbalance (?:locked|frozen|blocked)\b', r'\bfunds (?:locked|frozen|blocked)\b',
+    r'\bmy listing\b', r'\bmy sale\b', r'\bi was selling\b', r'\bbeen selling\b',
+    r'\b(?:dopo|prima) (?:di |che ho )?(?:vendut|spedit)', r'\bil mio annuncio\b',
+    r'\bla mia vendita\b', r'\bil mio acquirente\b', r'\bla mia cliente\b',
+    r'\bmi (?:è|e) tornato (?:il|un)\b', r'\bvendendo (?:su|a)\b',
+    r'\bvendetti\b', r'\bspedii\b',
+    # ── FRANCESE ──
+    r"\bj['']ai vendu", r"\bj['']ai envoyé", r"\bj['']ai expédié",
+    r"\bl['']acheteur\b", r'\bcet acheteur\b', r'\bcomme vendeur\b',
+    r"\bj['']ai été bloqué", r'\bcompte bloqué\b', r'\bsolde bloqué\b',
+    r"\bl['']acheteur (?:dit|prétend|a|m['']a)",
+    # ── SPAGNOLO ──
+    r'\bvendí\b', r'\bhe vendido\b', r'\benvié\b', r'\bhe enviado\b',
+    r'\bel comprador\b', r'\beste comprador\b', r'\bcomo vendedor\b',
+    r'\bcuenta bloqueada\b', r'\bsaldo bloqueado\b', r'\bfondos bloqueados\b',
+    r'\bel comprador (?:dice|afirma)',
+    # ── TEDESCO ──
+    r'\bich habe verkauft\b', r'\bich habe versandt\b', r'\bich habe verschickt\b',
+    r'\bich verkaufte\b', r'\bder käufer\b', r'\bdieser käufer\b',
+    r'\bals verkäufer\b', r'\bkonto gesperrt\b', r'\bguthaben gesperrt\b',
+    r'\bder käufer (?:behauptet|sagt|hat)',
+    # ── POLACCO ──
+    r'\bsprzedałem\b', r'\bsprzedałam\b', r'\bwysłałem\b', r'\bwysłałam\b',
+    r'\bkupujący\b', r'\bjako sprzedawca\b',
+    r'\bkonto zablokowane\b', r'\bsaldo zablokowane\b',
+    # ── OLANDESE ──
+    r'\bik heb verkocht\b', r'\bik heb verzonden\b', r'\bde koper\b',
+    r'\bals verkoper\b', r'\baccount geblokkeerd\b',
+    # ── CECO ──
+    r'\bprodal jsem\b', r'\bprodala jsem\b', r'\bposlal jsem\b',
+    r'\bposlala jsem\b', r'\bkupující\b', r'\búčet zablokovaný\b',
+    # ── LITUANO ──
+    r'\bpardaviau\b', r'\bsiunčiau\b', r'\bpirkėjas\b',
+    r'\bsąskaita užblokuota\b',
+]
+
+_PLATFORM_PATTERNS = [
+    # Piattaforma stessa è il bersaglio (non l'altra parte umana)
+    r'\bvinted (?:ha|non|è|si|mi|gli|ci|ladri|scam|truffa)',
+    r"\bebay (?:ha|non|refused|denied|blocked|suspended|won['']?t|sucks)",
+    r'\bdepop (?:ha|non|refused|denied|blocked|suspended|sucks)',
+    r'\bwallapop (?:no|ha|nos|me|bloque|suspendi)',
+    r'\bsupporto (?:vinted|ebay|depop|wallapop|cliente)',
+    r'\b(?:vinted|ebay|depop|wallapop|kleinanzeigen) support\b',
+    r'\b(?:vinted|ebay|depop) (?:customer )?service\b',
+    r"\bvinted (?:est|c['']?est) (?:une |un )?(?:arnaque|escroquerie)",
+    r'\bvinted (?:ist|sind) (?:ein |eine )?(?:betrug|abzocke)',
+    r'\bplatform (?:doesn['']?t|won['']?t|refused|denied|blocked|fault)',
+    r'\bthe platform\b', r'\bthis platform\b', r'\bthis app\b',
+    r'\bscammed by (?:vinted|ebay|depop|wallapop|the platform|the app)',
+    r'\bvinted are (?:thieves|liars|scammers|useless|terrible)',
+    r'\bcustomer (?:service|support) (?:is|are|was)\b.{0,30}\b(?:useless|shit|terrible|awful|crap)',
+    r'\bsupporto (?:è|fa|inutile|automatico)', r'\bassistenza (?:non|inutile|fa schifo)',
+    r'\bdecisione automatica\b', r'\bautomatic (?:reply|response|decision)',
+    r'\bthey (?:blocked|banned|suspended|refused|denied)\b',
+    r'\bli ha bloccat\b', r'\bli hanno bloccat\b',
+    r'\bsaldo bloccato\b', r'\bfondi bloccati\b', r'\baccount bloccat',
+    r'\baccount (?:suspended|blocked|banned|disabled|frozen)\b',
+    r'\bcompte bloqué', r'\bkonto gesperrt', r'\bcuenta bloqueada',
+    r'\b(?:non |never |jamais )(?:rispondono|reply|répondent|antworten|responden)\b',
+    r'\brimborso (?:negato|rifiutato|bloccato|non concesso)',
+    r'\brefund (?:denied|refused|rejected|blocked)',
+    r'\bden(?:ied|y) (?:my |the )?refund\b',
+]
+
+_COURIER_PATTERNS = [
+    # IT
+    r'\bil corriere\b', r'\bun corriere\b', r'\bdal corriere\b',
+    r'\bperso (?:dal |durante)? ?(?:corriere|trasporto|spedizione)',
+    r'\bsmarrito (?:dal |durante)? ?(?:corriere|trasporto|spedizione)',
+    r'\bdanneggiato (?:in|durante|dal)\s?(?:transito|trasporto|corriere|spedizione)',
+    r'\bconsegnato (?:altrove|a un altro|nel posto sbagliato)',
+    r'\b(?:poste italiane|brt|bartolini|gls|sda|tnt|inpost)\b',
+    # EN
+    r'\bthe courier\b', r'\bthis courier\b', r'\bthe delivery driver\b',
+    r'\b(?:dpd|hermes|evri|ups|fedex|royal mail|yodel|inpost|usps)\b',
+    r'\blost in transit\b', r'\blost (?:by|during) (?:the )?(?:courier|delivery|shipping)',
+    r'\bdamaged in transit\b', r'\b(?:tracking|delivered|shipped) (?:says|shows)\b',
+    r'\bdelivered to (?:the )?wrong (?:address|person)',
+    r'\bleft (?:at|on) (?:my |the )?(?:door|porch|step)',
+    r'\bstolen (?:from|off) (?:my )?(?:porch|doorstep|door)',
+    # FR
+    r'\ble (?:transporteur|livreur|courrier)\b', r'\b(?:la poste|chronopost|colissimo|mondial relay)\b',
+    r'\bperdu (?:par|pendant|en)\s?(?:la poste|le transport|la livraison|le transporteur)',
+    r'\bendommagé (?:par|pendant|en)\s?(?:le transport|la livraison)',
+    # DE
+    r'\bder (?:bote|kurier|paketdienst|lieferdienst)\b', r'\b(?:dhl|hermes|gls|dpd|deutsche post)\b',
+    r'\bin transit (?:verloren|beschädigt)\b',
+    # ES
+    r'\bel (?:transportista|repartidor|mensajero)\b', r'\b(?:correos|seur|nacex|mrw)\b',
+    r'\bperdido (?:por|durante|en)\s?(?:el transporte|la entrega|el mensajero)',
+    # PL
+    r'\bkurier\b', r'\b(?:dpd|inpost|paczkomat)\b',
+    r'\bzaginął (?:w|podczas)', r'\buszkodzony w transporcie\b',
+]
+
+_buyer_re_compiled    = [_re_actor.compile(p, _re_actor.IGNORECASE) for p in _BUYER_PATTERNS]
+_seller_re_compiled   = [_re_actor.compile(p, _re_actor.IGNORECASE) for p in _SELLER_PATTERNS]
+_platform_re_compiled = [_re_actor.compile(p, _re_actor.IGNORECASE) for p in _PLATFORM_PATTERNS]
+_courier_re_compiled  = [_re_actor.compile(p, _re_actor.IGNORECASE) for p in _COURIER_PATTERNS]
+
+# Tiebreaker / fallback: alcuni issue_type implicano fortemente un attore
+_ISSUE_BUYER  = {'venditore_non_risponde', 'oggetto_falso',
+                 'oggetto_diverso', 'oggetto_danneggiato'}
+_ISSUE_SELLER = {'pagamento_mancante'}
+_ISSUE_PLATFORM = {'controversia_persa'}
+_ISSUE_COURIER  = {'pacco_non_arrivato'}  # pesante ma non univoco
+
+# Source bias debole — review-site su app marketplace = quasi sempre compratori
+_SOURCE_BUYER_BIAS = {'appstore', 'playstore', 'sitejabber', 'pissedconsumer',
+                      'trustpilot', 'trustpilot_search'}
+
+_PRESS_SOURCES = {'google_news', 'web_article'}
+_PRESS_PATTERN = _re_actor.compile(
+    # Headline tipico: "Titolo - Domain.com" oppure "Titolo | Pubblicazione"
+    r' - [a-z0-9\-\.]+\.(?:com|co\.uk|it|fr|de|es|net|org|news|info)\b'
+    r'| \| (?:reuters|bbc|cnn|sun|guardian|telegraph|times|repubblica|corriere|figaro|monde|spiegel|bild|elpais|elmundo)\b',
+    _re_actor.IGNORECASE
+)
+
+def classify_actor(text, issue_type=None, source=None):
+    """5-way: 'compratore', 'venditore', 'piattaforma', 'corriere', 'stampa' o 'indeterminato'."""
+    if not text: return "indeterminato"
+    # Stampa: source dedicate (Google News) o testo che assomiglia a titolo/headline
+    if source in _PRESS_SOURCES: return "stampa"
+    if _PRESS_PATTERN.search(text):
+        return "stampa"
+    t = text.lower()
+    counts = {
+        'compratore' : sum(1 for r in _buyer_re_compiled    if r.search(t)),
+        'venditore'  : sum(1 for r in _seller_re_compiled   if r.search(t)),
+        'piattaforma': sum(1 for r in _platform_re_compiled if r.search(t)),
+        'corriere'   : sum(1 for r in _courier_re_compiled  if r.search(t)),
+    }
+    total = sum(counts.values())
+
+    if total > 0:
+        # Vincitore = chi ha più match. In caso di parità, usa issue_type come tiebreaker.
+        max_v = max(counts.values())
+        winners = [k for k, v in counts.items() if v == max_v]
+        if len(winners) == 1:
+            return winners[0]
+        # tie tra compratore/venditore/etc → spezza con issue_type
+        if 'compratore'  in winners and issue_type in _ISSUE_BUYER:    return 'compratore'
+        if 'venditore'   in winners and issue_type in _ISSUE_SELLER:   return 'venditore'
+        if 'piattaforma' in winners and issue_type in _ISSUE_PLATFORM: return 'piattaforma'
+        if 'corriere'    in winners and issue_type in _ISSUE_COURIER:  return 'corriere'
+        return winners[0]  # primo (compratore prima di venditore prima di piattaforma prima di corriere)
+
+    # Nessun segnale esplicito: fallback per issue_type
+    if issue_type in _ISSUE_SELLER:   return 'venditore'
+    if issue_type in _ISSUE_PLATFORM: return 'piattaforma'
+    if issue_type in _ISSUE_COURIER:  return 'corriere'
+    if issue_type in _ISSUE_BUYER and source in _SOURCE_BUYER_BIAS: return 'compratore'
+    if source in _SOURCE_BUYER_BIAS and issue_type and issue_type != "altro":
+        return 'compratore'
+    return "indeterminato"
 
 # ── CLASSIFICATORE ───────────────────────
 def classify(text):
@@ -512,6 +764,7 @@ def add(state, source, username, date, country, rating, issue, text, url=""):
             "issue_type": issue,
             "product_category": classify_product(text),
             "platform": classify_platform(text, url),
+            "actor": classify_actor(text, issue_type=issue, source=source),
             "text": text[:600].replace("\n"," ").replace("\r",""),
             "url": url, "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -2174,6 +2427,137 @@ def run_playstore(state, config):
     log(f"Play Store: +{count} nuovi record")
 
 # ────────────────────────────────────────
+# FONTE 30: WEB ARTICLES (search engine generico, multi-lingua, paralello)
+# Cerca articoli/blog/news SENZA filtro site:, 6 thread paralleli (uno per lingua)
+# Cap globale 600, cap per lingua 100 → distribuzione equa
+# ────────────────────────────────────────
+_WEB_ARTICLE_TOTAL_CAP = 600
+_WEB_ARTICLE_PER_LANG  = 100
+
+_WEB_KEYWORDS = {
+    "it": [
+        "vinted truffa","vinted falso","vinted pacco vuoto","vinted rimborso negato",
+        "vinted truffato","vinted controversia","vinted account bloccato",
+        "ebay truffa","ebay falso","ebay non arrivato","ebay rimborso negato",
+        "depop truffa","subito.it truffa","wallapop truffa",
+        "marketplace truffa","facebook marketplace truffa",
+        "vendita online truffa","truffa compravendita","seconda mano truffa",
+    ],
+    "en": [
+        "vinted scam","vinted fake","vinted fraud","vinted not received","vinted empty box",
+        "vinted refund denied","vinted seller scam","vinted buyer scam",
+        "ebay scam","ebay fake","ebay fraud","ebay refund refused","ebay buyer scam",
+        "depop scam","depop fake","depop fraud","depop not as described",
+        "facebook marketplace scam","marketplace fraud",
+        "online marketplace scam","second hand scam","c2c marketplace fraud",
+    ],
+    "fr": [
+        "vinted arnaque","vinted colis vide","vinted jamais reçu","vinted litige perdu",
+        "vinted escroquerie","vinted faux","vinted contrefaçon","vinted remboursement refusé",
+        "ebay arnaque","ebay escroquerie","ebay colis vide","ebay contrefaçon",
+        "leboncoin arnaque","leboncoin escroquerie",
+        "marketplace arnaque","facebook marketplace arnaque",
+        "achat en ligne arnaque","seconde main arnaque",
+    ],
+    "de": [
+        "vinted betrug","vinted gefälscht","vinted nie angekommen","vinted abzocke",
+        "vinted erstattung verweigert","vinted leeres paket","vinted falsch",
+        "ebay betrug","ebay gefälscht","ebay erstattung verweigert",
+        "kleinanzeigen betrug","kleinanzeigen abzocke","ebay kleinanzeigen betrug",
+        "marketplace betrug","facebook marketplace betrug",
+        "online kauf betrug","gebraucht kauf betrug",
+    ],
+    "es": [
+        "vinted estafa","vinted falso","vinted nunca llegó","vinted me estafaron",
+        "vinted fraude","vinted reembolso denegado",
+        "ebay estafa","ebay falso","ebay me estafaron",
+        "wallapop estafa","wallapop fraude","wallapop falso",
+        "marketplace estafa","facebook marketplace estafa",
+        "compra venta estafa","segunda mano estafa",
+    ],
+    "pl": [
+        "vinted oszustwo","vinted podróbka","vinted pusta paczka","vinted nie dotarło",
+        "vinted zwrot odmówiony","vinted oszust",
+        "ebay oszustwo","ebay podróbka","ebay nie dotarło",
+        "marketplace oszustwo","facebook marketplace oszustwo",
+        "sprzedaż online oszustwo","zakup używanych oszustwo",
+    ],
+}
+
+_LANG_TO_CC = {"it":"IT","en":"INT","fr":"FR","de":"DE","es":"ES","pl":"PL"}
+_LANG_HEADERS = {
+    "it": "it-IT,it;q=0.9,en;q=0.5",
+    "en": "en-US,en;q=0.9",
+    "fr": "fr-FR,fr;q=0.9,en;q=0.5",
+    "de": "de-DE,de;q=0.9,en;q=0.5",
+    "es": "es-ES,es;q=0.9,en;q=0.5",
+    "pl": "pl-PL,pl;q=0.9,en;q=0.5",
+}
+
+def run_web_articles(state, config):
+    if not config["sources_enabled"].get("web_articles", True): return
+    log("Web Articles: avvio (6 thread paralleli, una lingua ciascuno)")
+
+    # Stop preventivo se cap globale già raggiunto
+    already = _existing_counts.get("web_article", 0)
+    if already >= _WEB_ARTICLE_TOTAL_CAP:
+        log(f"Web Articles: cap 600 già raggiunto ({already}), skip")
+        return
+
+    lang_counts = {lang: 0 for lang in _WEB_KEYWORDS}
+    counter_lock = threading.Lock()
+    total_added  = [0]
+    base_ua = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+               "AppleWebKit/537.36 (KHTML, like Gecko) "
+               "Chrome/122.0.0.0 Safari/537.36")
+
+    def fetch_for_lang(lang, keywords):
+        random.shuffle(keywords)
+        headers = {"User-Agent": base_ua, "Accept-Language": _LANG_HEADERS[lang]}
+        cc = _LANG_TO_CC[lang]
+        for kw in keywords:
+            # Stop per cap lingua o cap globale
+            if lang_counts[lang] >= _WEB_ARTICLE_PER_LANG: return
+            with counter_lock:
+                if already + total_added[0] >= _WEB_ARTICLE_TOTAL_CAP: return
+            # Bing primario
+            results = []
+            try:
+                results = _search_bing(kw, headers)
+            except Exception as e:
+                log(f"  WebArt[{lang}] Bing '{kw[:40]}': {e}")
+            # DDG fallback
+            if not results:
+                try:
+                    results = _search_ddg(kw, headers)
+                except Exception as e:
+                    log(f"  WebArt[{lang}] DDG '{kw[:40]}': {e}")
+            # Parsa risultati
+            for title, snippet, url in results:
+                if lang_counts[lang] >= _WEB_ARTICLE_PER_LANG: break
+                with counter_lock:
+                    if already + total_added[0] >= _WEB_ARTICLE_TOTAL_CAP: return
+                txt = f"{title}. {snippet}".strip(". ")
+                if len(txt.split()) < MIN_WORDS: continue
+                if not is_negative(txt): continue
+                issue = classify(txt)
+                if issue == "altro": continue
+                if add(state, "web_article", "search",
+                       datetime.now().strftime("%Y-%m-%d"), cc, "", issue, txt, url):
+                    lang_counts[lang] += 1
+                    with counter_lock:
+                        total_added[0] += 1
+            time.sleep(random.uniform(2, 4))
+
+    threads = [threading.Thread(target=fetch_for_lang, args=(lang, list(kws)), daemon=True)
+               for lang, kws in _WEB_KEYWORDS.items()]
+    for t in threads: t.start()
+    for t in threads: t.join()
+
+    breakdown = " ".join(f"{k}={v}" for k, v in lang_counts.items())
+    log(f"Web Articles: +{total_added[0]} record nuovi (totale: {already + total_added[0]}/{_WEB_ARTICLE_TOTAL_CAP}) [{breakdown}]")
+
+# ────────────────────────────────────────
 # LOOP PRINCIPALE — gira 24/7
 # ────────────────────────────────────────
 def main():
@@ -2216,6 +2600,7 @@ def main():
             run_appstore,        # App Store reviews (iTunes RSS)
             run_playstore,       # Play Store reviews (google-play-scraper)
             run_search_engines,  # DDG dorking su Facebook/Instagram/TikTok
+            run_web_articles,    # Articoli generici da web (6 lingue parallele, cap 600)
             run_twitter_v2,      # Twitter/X API
             run_forum_it,        # Forum italiani
             run_forum_fr,        # Forum francesi

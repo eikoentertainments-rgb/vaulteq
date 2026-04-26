@@ -10,7 +10,7 @@ OUTPUT = f"{BASE}/data/vinted_complaints.csv"
 # Importa funzioni dal main per coerenza
 sys.path.insert(0, BASE)
 from collector.main import (
-    classify, classify_product, classify_platform,
+    classify, classify_product, classify_platform, classify_actor,
     is_negative, is_valid, make_id, FIELDNAMES
 )
 
@@ -51,6 +51,7 @@ def add_records(records):
                 "issue_type": issue,
                 "product_category": classify_product(text),
                 "platform": classify_platform(text, r.get("url","")),
+                "actor": classify_actor(text, issue_type=issue, source=r["source"]),
                 "text": text[:600].replace("\n"," ").replace("\r",""),
                 "url": r.get("url",""),
                 "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

@@ -136,12 +136,12 @@
           <h3>🏪 Venditore</h3>
           <div class="role">truffe contro il compratore</div>
           <ul>
-            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Pacco mai spedito</li>
-            <li onclick="filterByIssueAndJump('pacco_vuoto')">Pacco vuoto reale</li>
-            <li onclick="filterByIssueAndJump('oggetto_falso')">Articolo contraffatto</li>
-            <li onclick="filterByIssueAndJump('oggetto_diverso')">Articolo diverso da foto</li>
-            <li onclick="filterByIssueAndJump('oggetto_falso')">Foto fake / generate da AI</li>
-            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Venditore sparito</li>
+            <li onclick="filterByIssueAndJump('pacco_vuoto')">Spedisce pacco vuoto</li>
+            <li onclick="filterByIssueAndJump('oggetto_falso')">Spedisce articolo contraffatto / non originale come descritto</li>
+            <li onclick="filterByIssueAndJump('oggetto_diverso')">Spedisce articolo diverso dalle foto</li>
+            <li onclick="filterByIssueAndJump('oggetto_danneggiato')">Articolo danneggiato e/o non funzionante non dichiarato</li>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Video live del pacco ma poi sostituito con uno identico vuoto / diverso</li>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Video live del pacco ma a video finito pacco aperto e rimozione oggetto</li>
           </ul>
         </div>
         <div class="actor courier">
@@ -151,19 +151,17 @@
             <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Pacco smarrito</li>
             <li onclick="filterByIssueAndJump('oggetto_danneggiato')">Pacco danneggiato in transito</li>
             <li onclick="filterByIssueAndJump('pacco_vuoto')">Manomissione del pacco</li>
-            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Consegna a indirizzo sbagliato</li>
-            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Locker / punto ritiro problematico</li>
+            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Foto del pacco consegnato ma poi sparito / rubato / manomesso</li>
           </ul>
         </div>
         <div class="actor buyer">
           <h3>🛒 Compratore</h3>
           <div class="role">truffe contro il venditore</div>
           <ul>
-            <li onclick="filterByIssueAndJump('pacco_vuoto')">Reclamo falso "pacco vuoto"</li>
-            <li onclick="filterByIssueAndJump('controversia_persa')">Controversia fittizia</li>
-            <li onclick="filterByIssueAndJump('oggetto_diverso')">Sostituzione dell'articolo</li>
-            <li onclick="filterByIssueAndJump('oggetto_danneggiato')">Danneggiamento volontario</li>
-            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Mancato ritiro per ottenere rimborso</li>
+            <li onclick="filterByIssueAndJump('pacco_vuoto')">Falso reclamo "pacco vuoto" per ottenere rimborso</li>
+            <li onclick="filterByIssueAndJump('oggetto_diverso')">Sostituzione dell'articolo dal pacco pre video-live</li>
+            <li onclick="filterByIssueAndJump('pacco_vuoto')">Rimozione dell'articolo dal pacco pre video-live</li>
+            <li onclick="filterByIssueAndJump('oggetto_danneggiato')">Danneggiamento volontario per fini rimborso</li>
           </ul>
         </div>
       </div>
@@ -172,22 +170,21 @@
           <h3>⚠️ Piattaforma</h3>
           <div class="role">criticità del marketplace</div>
           <ul>
-            <li onclick="filterByIssueAndJump('pagamento_mancante')">Account bloccato con fondi dentro</li>
-            <li onclick="filterByIssueAndJump('controversia_persa')">Rimborso negato senza spiegazioni</li>
-            <li onclick="filterByIssueAndJump('pagamento_mancante')">Pagamento al venditore mai sbloccato</li>
-            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Supporto clienti irraggiungibile</li>
-            <li onclick="filterByIssueAndJump('controversia_persa')">Decisione automatica senza prove</li>
+            <li onclick="filterByIssueAndJump('pagamento_mancante')">Transazioni e fondi bloccati</li>
+            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Supporto cliente inefficiente e artificiale</li>
+            <li onclick="filterByIssueAndJump('venditore_non_risponde')">Assistenza clienti irraggiungibile</li>
+            <li onclick="filterByIssueAndJump('controversia_persa')">Decisioni automatiche senza prove</li>
           </ul>
         </div>
         <div class="actor external">
           <h3>🎭 Truffatori esterni</h3>
-          <div class="role">attacchi via email / link / phishing</div>
+          <div class="role">transazioni private fuori da marketplace famosi e truffe senza protezioni</div>
           <ul>
-            <li onclick="filterByIssueAndJump('truffa_generica')">Phishing email che simula la piattaforma</li>
-            <li onclick="filterByIssueAndJump('truffa_generica')">Link finti di "verifica pagamento"</li>
-            <li onclick="filterByIssueAndJump('truffa_generica')">Bonifico fuori piattaforma</li>
-            <li onclick="filterByIssueAndJump('truffa_generica')">Falso supporto Vinted via SMS</li>
-            <li onclick="filterByIssueAndJump('truffa_generica')">Furto credenziali bancarie</li>
+            <li onclick="filterByIssueAndJump('truffa_generica')">Transazioni dirette rischiose</li>
+            <li onclick="filterByIssueAndJump('pagamento_mancante')">Richiesta di soldi anticipati senza garanzie</li>
+            <li onclick="filterByIssueAndJump('pacco_non_arrivato')">Pacchi mai spediti</li>
+            <li onclick="filterByIssueAndJump('pagamento_mancante')">Soldi spariti</li>
+            <li onclick="filterByIssueAndJump('controversia_persa')">Nessuna garanzia di rimborso</li>
           </ul>
         </div>
       </div>
@@ -210,6 +207,7 @@
         <div class="tab" onclick="showTab('problems')">Per Problema</div>
         <div class="tab" onclick="showTab('products')">Per Prodotto</div>
         <div class="tab" onclick="showTab('marketplace')">Per Marketplace</div>
+        <div class="tab" onclick="showTab('actors')">Per Attore</div>
         <div class="tab" onclick="showTab('all')">Tutti i Record</div>
       </div>
     </div>
@@ -218,10 +216,17 @@
     <div class="panel active" id="tab-overview">
       <div class="charts2">
         <div class="chart-card"><h4>Tipo di Problema</h4><canvas id="c-issue"></canvas></div>
-        <div class="chart-card"><h4>Fonte</h4><canvas id="c-source"></canvas></div>
+        <div class="chart-card"><h4>Categoria Prodotto</h4><canvas id="c-product"></canvas></div>
       </div>
       <div class="charts2">
+        <div class="chart-card"><h4>Marketplace</h4><canvas id="c-marketplace"></canvas></div>
+        <div class="chart-card"><h4>Compratore vs Venditore</h4><canvas id="c-actor"></canvas></div>
+      </div>
+      <div class="charts2">
+        <div class="chart-card"><h4>Fonte</h4><canvas id="c-source"></canvas></div>
         <div class="chart-card"><h4>Paese (top 12)</h4><canvas id="c-country"></canvas></div>
+      </div>
+      <div class="charts2">
         <div class="chart-card"><h4>Andamento nel Tempo</h4><canvas id="c-timeline"></canvas></div>
       </div>
     </div>
@@ -260,6 +265,19 @@
         </div>
         <div id="marketplace-issue-grid" style="margin-bottom:20px"></div>
         <div id="marketplace-table-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB: PER ATTORE -->
+    <div class="panel" id="tab-actors">
+      <div class="cat-grid" id="actor-grid"></div>
+      <div id="actor-detail" style="display:none">
+        <div class="table-header">
+          <h3 id="actor-title"></h3>
+          <button onclick="clearActorFilter()" style="padding:6px 14px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:13px">← Tutti gli attori</button>
+        </div>
+        <div id="actor-issue-grid" style="margin-bottom:20px"></div>
+        <div id="actor-table-container"></div>
       </div>
     </div>
 
@@ -335,6 +353,12 @@ const PROD_LABELS = {
   bambini_giocattoli:'🧸 Bambini & Giocattoli', libri_media:'📚 Libri & Media',
   undefined:'❓ Non classificato'
 };
+const ACTOR_LABELS = {
+  compratore:'🛒 Compratore', venditore:'🏪 Venditore',
+  piattaforma:'⚠️ Piattaforma', corriere:'📦 Corriere',
+  stampa:'📰 Stampa / Articoli',
+  indeterminato:'❓ Non determinato'
+};
 const SOURCE_LABELS = {
   reddit:'Reddit', reddit_comment:'Reddit (commenti)', reddit_search:'Reddit (ricerca)',
   youtube_comment:'YouTube (commenti)', youtube_video:'YouTube (video)',
@@ -344,7 +368,8 @@ const SOURCE_LABELS = {
   twitter:'Twitter/X',
   forum_it:'Forum IT', forum_fr:'Forum FR', forum_de:'Forum DE',
   facebook_search:'Facebook (DDG)', instagram_search:'Instagram (DDG)',
-  tiktok_search:'TikTok (DDG)', trustpilot_search:'Trustpilot (DDG)'
+  tiktok_search:'TikTok (DDG)', trustpilot_search:'Trustpilot (DDG)',
+  web_article:'Articoli Web (6 lingue)'
 };
 
 function count(arr, key) {
@@ -387,6 +412,19 @@ function renderOverview(data) {
   const iLabels = Object.keys(issues).sort((a,b)=>issues[b]-issues[a]);
   makeChart('c-issue','doughnut',iLabels.map(k=>ISSUE_LABELS[k]||k),iLabels.map(k=>issues[k]));
 
+  const prods = count(data,'product_category');
+  const pLabels = Object.keys(prods).sort((a,b)=>prods[b]-prods[a]);
+  makeChart('c-product','doughnut',pLabels.map(k=>PROD_LABELS[k]||k),pLabels.map(k=>prods[k]));
+
+  const markets = count(data,'platform');
+  const mLabels = Object.keys(markets).sort((a,b)=>markets[b]-markets[a]);
+  makeChart('c-marketplace','doughnut',mLabels.map(k=>MARKET_LABELS[k]||k),mLabels.map(k=>markets[k]));
+
+  // Compratore vs Venditore — solo record con attore determinato
+  const actors = count(data.filter(r => r.actor && r.actor !== 'indeterminato'), 'actor');
+  const aLabels = Object.keys(actors).sort((a,b)=>actors[b]-actors[a]);
+  makeChart('c-actor','doughnut',aLabels.map(k=>ACTOR_LABELS[k]||k),aLabels.map(k=>actors[k]));
+
   const srcs = count(data,'source');
   const sLabels = Object.keys(srcs).sort((a,b)=>srcs[b]-srcs[a]);
   makeChart('c-source','bar',sLabels.map(k=>SOURCE_LABELS[k]||k),sLabels.map(k=>srcs[k]));
@@ -395,8 +433,16 @@ function renderOverview(data) {
   const cLabels = Object.keys(ctrs).sort((a,b)=>ctrs[b]-ctrs[a]).slice(0,12);
   makeChart('c-country','bar',cLabels,cLabels.map(k=>ctrs[k]));
 
+  // Esclude i record con date "fallback" (date == giorno di raccolta)
+  // perché sono fonti che non forniscono la data reale
   const byM = {};
-  data.forEach(r=>{ const m=(r.date||'').slice(0,7); if(m) byM[m]=(byM[m]||0)+1; });
+  data.forEach(r=>{
+    const d = (r.date||'').slice(0,10);
+    const c = (r.collected_at||'').slice(0,10);
+    if (!d || d === c) return;  // skip fallback dates
+    const m = d.slice(0,7);
+    byM[m] = (byM[m]||0)+1;
+  });
   const months = Object.keys(byM).sort();
   makeChart('c-timeline','bar',months,months.map(m=>byM[m]));
 }
@@ -565,10 +611,65 @@ function populateFilters(data) {
 }
 
 function showTab(name) {
-  const tabs = ['overview','problems','products','marketplace','all'];
+  const tabs = ['overview','problems','products','marketplace','actors','all'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ── ACTORS TAB ──
+let actorFilter = null, actorIssueFilter = null, actorPage = 1;
+
+function renderActors() {
+  const actors = count(ALL, 'actor');
+  renderCatGrid('actor-grid', actors, ACTOR_LABELS, 'filterByActor');
+  document.getElementById('actor-grid').style.display = '';
+  document.getElementById('actor-detail').style.display = 'none';
+}
+
+function filterByActor(actor) {
+  actorFilter = actor;
+  actorIssueFilter = null;
+  actorPage = 1;
+  document.getElementById('actor-grid').style.display = 'none';
+  document.getElementById('actor-detail').style.display = 'block';
+  document.getElementById('actor-title').textContent = ACTOR_LABELS[actor] || actor;
+  const subset = ALL.filter(r => (r.actor||'indeterminato') === actor);
+  const issues = count(subset, 'issue_type');
+  const total = subset.length;
+  document.getElementById('actor-issue-grid').innerHTML =
+    `<div style="margin-bottom:8px;font-size:13px;color:#64748b">${total.toLocaleString()} record — clicca un problema per filtrare</div>` +
+    Object.keys(issues).sort((a,b)=>issues[b]-issues[a]).map(k => `
+      <div class="cat-card" onclick="filterActorByIssue('${k}')" id="aiq-${k}">
+        <div class="cat-n">${issues[k]}</div>
+        <div class="cat-l">${ISSUE_LABELS[k]||k}</div>
+        <div class="cat-pct">${((issues[k]/total)*100).toFixed(1)}%</div>
+      </div>`).join('');
+  actorGoPage(1);
+}
+
+function filterActorByIssue(issue) {
+  actorIssueFilter = issue;
+  actorPage = 1;
+  document.querySelectorAll('[id^="aiq-"]').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('aiq-' + issue);
+  if (el) el.classList.add('active');
+  actorGoPage(1);
+}
+
+function actorGoPage(p) {
+  actorPage = p;
+  let subset = ALL.filter(r => (r.actor||'indeterminato') === actorFilter);
+  if (actorIssueFilter) subset = subset.filter(r => r.issue_type === actorIssueFilter);
+  makeTable(subset, actorPage, PER, 'actor-table-container', 'actorGoPage');
+  window.scrollTo({top:200, behavior:'smooth'});
+}
+
+function clearActorFilter() {
+  actorFilter = null;
+  actorIssueFilter = null;
+  document.getElementById('actor-grid').style.display = '';
+  document.getElementById('actor-detail').style.display = 'none';
 }
 
 // Click su una voce della mappa rischi → filtra "Tutti i Record" per issue_type
@@ -602,6 +703,7 @@ Papa.parse('data/vinted_complaints.csv?v=' + Date.now(), {
     renderCatGrid('product-grid', prods, PROD_LABELS, 'filterByProduct');
 
     renderMarketplace();
+    renderActors();
     populateFilters(ALL);
     renderAll();
 
