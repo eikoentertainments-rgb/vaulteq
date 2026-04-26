@@ -9,6 +9,31 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 
 _lock = threading.Lock()  # protegge state e CSV da scritture simultanee
+_cycle_counts = {}        # record aggiunti per fonte nel ciclo corrente
+_existing_counts = {}     # record già presenti nel CSV per fonte (a inizio ciclo)
+SOURCE_HARD_CAP = 1000    # max record totali per fonte (esistenti + nuovi)
+MAX_PER_SOURCE = {        # limite per ciclo per bilanciare le fonti
+    "youtube_comment": 600,
+    "youtube_video":   150,
+    "reddit":          500,
+    "reddit_comment":  500,
+    "reddit_search":   300,
+    "sitejabber":      400,
+    "pissedconsumer":  400,
+    "trustpilot":      400,
+    "hackernews":      400,
+    "appstore":        300,
+    "playstore":       300,
+    "twitter":         300,
+    "facebook_search":   400,
+    "instagram_search":  400,
+    "tiktok_search":     400,
+    "trustpilot_search": 400,
+    "google_news":     300,
+    "forum_it":        300,
+    "forum_fr":        300,
+    "forum_de":        300,
+}
 
 BASE = "/Users/gioooo2/gio-platform"
 DATA_DIR = f"{BASE}/data"
@@ -88,6 +113,17 @@ def count_records():
         return 0
     with open(OUTPUT, encoding="utf-8") as f:
         return sum(1 for _ in f) - 1
+
+def count_per_source():
+    counts = {}
+    if not os.path.exists(OUTPUT):
+        return counts
+    with open(OUTPUT, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            s = row.get("source", "")
+            counts[s] = counts.get(s, 0) + 1
+    return counts
 
 def make_id(text, username, date):
     return hashlib.md5(f"{text[:100]}{username}{date}".encode()).hexdigest()
@@ -457,11 +493,19 @@ def is_valid(text, date, issue=""):
 def add(state, source, username, date, country, rating, issue, text, url=""):
     if not is_valid(text, date, issue):
         return False
+    # Cap totale per fonte: 1000 record (esistenti + nuovi del ciclo)
+    total_for_source = _existing_counts.get(source, 0) + _cycle_counts.get(source, 0)
+    if total_for_source >= SOURCE_HARD_CAP:
+        return False
+    limit = MAX_PER_SOURCE.get(source)
+    if limit and _cycle_counts.get(source, 0) >= limit:
+        return False
     uid = make_id(text, username, date)
     with _lock:
         if uid in state["seen_ids"]:
             return False
         state["seen_ids"].append(uid)
+        _cycle_counts[source] = _cycle_counts.get(source, 0) + 1
         record = {
             "source": source, "username": username[:80], "date": date,
             "country": country, "rating": rating,
@@ -1624,6 +1668,512 @@ def run_forocoches(state, config):
     log(f"Forocoches: +{count} nuovi record")
 
 # ────────────────────────────────────────
+# FONTE 21: GOOGLE NEWS RSS (multilingua, no blocco)
+# ────────────────────────────────────────
+def run_google_news(state, config):
+    if not config["sources_enabled"].get("google_news", True): return
+    log("Google News: avvio")
+    import xml.etree.ElementTree as ET
+    count = 0
+    queries = [
+        # Vinted
+        "vinted scam","vinted truffa","vinted arnaque","vinted betrug","vinted estafa",
+        "vinted fake","vinted fraud","vinted oszustwo",
+        # eBay
+        "ebay scam","ebay truffa","ebay arnaque","ebay betrug","ebay estafa","ebay fraud",
+        # Depop
+        "depop scam","depop fraud","depop fake","depop truffa",
+        # Marketplace
+        "facebook marketplace scam","marketplace truffa","marketplace arnaque",
+        "wallapop estafa","subito truffa","leboncoin arnaque","kleinanzeigen betrug",
+        # Generico
+        "online marketplace scam","second hand scam","vendita online truffa",
+        "achat revente arnaque","Kleinanzeigen Betrug pakete","fake online seller",
+    ]
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; RSS reader)"}
+    for q in queries:
+        try:
+            url = f"https://news.google.com/rss/search?q={requests.utils.quote(q)}&hl=en&gl=US&ceid=US:en"
+            r = requests.get(url, headers=headers, timeout=15)
+            if r.status_code != 200: continue
+            root = ET.fromstring(r.content)
+            for item in root.findall(".//item"):
+                title = item.findtext("title","")
+                desc  = item.findtext("description","")
+                # Pulisci HTML tags dalla description
+                desc = BeautifulSoup(desc, "lxml").get_text(separator=" ", strip=True) if desc else ""
+                txt = f"{title} {desc}".strip()
+                if len(txt.split()) < MIN_WORDS: continue
+                issue = classify(txt)
+                if issue == "altro": continue
+                pub = item.findtext("pubDate","")
+                try:
+                    from email.utils import parsedate_to_datetime
+                    date = parsedate_to_datetime(pub).strftime("%Y-%m-%d") if pub else datetime.now().strftime("%Y-%m-%d")
+                except:
+                    date = datetime.now().strftime("%Y-%m-%d")
+                link = item.findtext("link","")
+                if add(state,"google_news","news",date,"INT","",issue,txt,link):
+                    count += 1
+            time.sleep(random.uniform(1,2))
+        except Exception as e:
+            log(f"  GoogleNews '{q}': {e}")
+    log(f"Google News: +{count} nuovi record")
+
+# ────────────────────────────────────────
+# FONTE 22: FORUM ITALIANI (hwupgrade, tom's hardware IT)
+# ────────────────────────────────────────
+def run_forum_it(state, config):
+    if not config["sources_enabled"].get("forum_it", True): return
+    log("Forum IT: avvio")
+    count = 0
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "Accept-Language": "it-IT,it;q=0.9",
+    }
+    searches = [
+        ("https://www.hwupgrade.it/forum/search.php?do=process&query={q}&titleonly=0&showposts=1", "hwupgrade"),
+        ("https://www.tomshw.it/forum/search.php?do=process&query={q}&titleonly=0&showposts=1", "tomshw"),
+    ]
+    keywords = [
+        "vinted truffa","vinted falso","vinted non arrivato","vinted fregato",
+        "ebay truffa","ebay falso","subito truffa","subito falso",
+        "facebook marketplace truffa","vendita online truffa","pacco vuoto truffa",
+    ]
+    for kw in keywords:
+        for url_tpl, forum_name in searches:
+            try:
+                r = requests.get(url_tpl.format(q=requests.utils.quote(kw)),
+                                headers=headers, timeout=15)
+                if r.status_code != 200: continue
+                soup = BeautifulSoup(r.text, "lxml")
+                for post in soup.find_all(["div","td"], class_=lambda c: c and ("post" in (c or "") or "message" in (c or ""))):
+                    txt = post.get_text(separator=" ", strip=True)
+                    if len(txt.split()) < MIN_WORDS: continue
+                    if len(txt) > 600: txt = txt[:600]
+                    issue = classify(txt)
+                    if issue == "altro": continue
+                    date_el = post.find("time") or post.find(class_=lambda c: c and "date" in (c or ""))
+                    date = date_el.get("datetime","")[:10] if date_el and date_el.get("datetime") else datetime.now().strftime("%Y-%m-%d")
+                    if add(state,"forum_it","anon",date,"IT","",issue,txt):
+                        count += 1
+                time.sleep(random.uniform(2,3))
+            except Exception as e:
+                log(f"  Forum IT {forum_name} '{kw}': {e}")
+    log(f"Forum IT: +{count} nuovi record")
+
+# ────────────────────────────────────────
+# FONTE 23: FORUM FRANCESI (commentcamarche, futura-sciences)
+# ────────────────────────────────────────
+def run_forum_fr(state, config):
+    if not config["sources_enabled"].get("forum_fr", True): return
+    log("Forum FR: avvio")
+    count = 0
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "Accept-Language": "fr-FR,fr;q=0.9",
+    }
+    keywords = [
+        "vinted arnaque","vinted colis vide","vinted escroquerie","vinted jamais reçu",
+        "ebay arnaque","leboncoin arnaque","leboncoin escroquerie",
+        "facebook marketplace arnaque","vinted litige perdu","achat en ligne arnaque",
+    ]
+    for kw in keywords:
+        try:
+            url = f"https://forums.commentcamarche.net/search/?q={requests.utils.quote(kw)}"
+            r = requests.get(url, headers=headers, timeout=15)
+            if r.status_code != 200: continue
+            soup = BeautifulSoup(r.text, "lxml")
+            for post in soup.find_all(["article","div"], class_=lambda c: c and ("post" in (c or "") or "message" in (c or "") or "result" in (c or ""))):
+                txt = post.get_text(separator=" ", strip=True)
+                if len(txt.split()) < MIN_WORDS: continue
+                if len(txt) > 600: txt = txt[:600]
+                issue = classify(txt)
+                if issue == "altro": continue
+                date_el = post.find("time")
+                date = date_el.get("datetime","")[:10] if date_el and date_el.get("datetime") else datetime.now().strftime("%Y-%m-%d")
+                if add(state,"forum_fr","anon",date,"FR","",issue,txt,url):
+                    count += 1
+            time.sleep(random.uniform(2,3))
+        except Exception as e:
+            log(f"  Forum FR '{kw}': {e}")
+    log(f"Forum FR: +{count} nuovi record")
+
+# ────────────────────────────────────────
+# FONTE 24: FORUM TEDESCHI (gutefrage, forum.chip.de)
+# ────────────────────────────────────────
+def run_forum_de(state, config):
+    if not config["sources_enabled"].get("forum_de", True): return
+    log("Forum DE: avvio")
+    count = 0
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "Accept-Language": "de-DE,de;q=0.9",
+    }
+    keywords = [
+        "vinted betrug","vinted gefälscht","vinted nie angekommen","vinted abzocke",
+        "ebay betrug","ebay gefälscht","kleinanzeigen betrug","kleinanzeigen fake",
+        "facebook marketplace betrug","online kauf betrug paket",
+    ]
+    for kw in keywords:
+        try:
+            url = f"https://forum.chip.de/search?q={requests.utils.quote(kw)}"
+            r = requests.get(url, headers=headers, timeout=15)
+            if r.status_code != 200: continue
+            soup = BeautifulSoup(r.text, "lxml")
+            for post in soup.find_all(["article","div","li"], class_=lambda c: c and ("post" in (c or "") or "message" in (c or "") or "result" in (c or ""))):
+                txt = post.get_text(separator=" ", strip=True)
+                if len(txt.split()) < MIN_WORDS: continue
+                if len(txt) > 600: txt = txt[:600]
+                issue = classify(txt)
+                if issue == "altro": continue
+                date_el = post.find("time")
+                date = date_el.get("datetime","")[:10] if date_el and date_el.get("datetime") else datetime.now().strftime("%Y-%m-%d")
+                if add(state,"forum_de","anon",date,"DE","",issue,txt,url):
+                    count += 1
+            time.sleep(random.uniform(2,3))
+        except Exception as e:
+            log(f"  Forum DE '{kw}': {e}")
+    log(f"Forum DE: +{count} nuovi record")
+
+# ────────────────────────────────────────
+# FONTE 25: HACKER NEWS (Algolia API)
+# ────────────────────────────────────────
+def run_hackernews(state, config):
+    if not config["sources_enabled"].get("hackernews", True): return
+    log("Hacker News: avvio")
+    count = 0
+    queries = [
+        "vinted scam", "vinted fraud", "vinted fake", "vinted problem",
+        "vinted truffa", "vinted arnaque", "vinted betrug",
+        "ebay scam", "ebay fraud", "ebay fake seller",
+        "depop scam", "depop fraud", "depop fake",
+        "facebook marketplace scam", "marketplace fraud",
+        "wallapop scam", "second hand scam", "c2c fraud",
+        "online marketplace scam", "fake online seller",
+        "kleinanzeigen scam", "leboncoin arnaque",
+    ]
+    for q in queries:
+        try:
+            r = requests.get("https://hn.algolia.com/api/v1/search",
+                params={"query": q, "tags": "comment", "hitsPerPage": 100},
+                timeout=15)
+            if r.status_code != 200: continue
+            for hit in r.json().get("hits", []):
+                raw = hit.get("comment_text") or hit.get("story_text") or hit.get("title") or ""
+                txt = BeautifulSoup(raw, "lxml").get_text(separator=" ", strip=True)
+                if len(txt.split()) < MIN_WORDS: continue
+                if not is_negative(txt): continue
+                issue = classify(txt)
+                if issue == "altro": continue
+                author = hit.get("author", "anon")
+                date   = hit.get("created_at", "")[:10]
+                url    = f"https://news.ycombinator.com/item?id={hit.get('objectID','')}"
+                if add(state, "hackernews", author, date, "INT", "", issue, txt, url):
+                    count += 1
+            time.sleep(1)
+        except Exception as e:
+            log(f"  HN '{q}': {e}")
+    log(f"Hacker News: +{count} nuovi record")
+
+# ────────────────────────────────────────
+# FONTE 26: APP STORE REVIEWS (iTunes RSS)
+# ────────────────────────────────────────
+def run_appstore(state, config):
+    if not config["sources_enabled"].get("appstore", True): return
+    log("App Store: avvio")
+    count = 0
+    apps = [
+        ("632064380",  "vinted",   ["fr", "it", "de", "es", "pl", "gb"]),
+        ("282614216",  "ebay",     ["us", "gb", "de", "fr", "it"]),
+        ("570843012",  "depop",    ["us", "gb", "it"]),
+        ("586348880",  "wallapop", ["es", "it"]),
+    ]
+    headers = {"User-Agent": "iTunes/12.0 (Macintosh; U; Mac OS X 10.15)"}
+    for app_id, app_name, countries in apps:
+        for cc in countries:
+            try:
+                url = (f"https://itunes.apple.com/{cc}/rss/customerreviews"
+                       f"/id={app_id}/sortBy=mostRecent/json")
+                r = requests.get(url, headers=headers, timeout=15)
+                if r.status_code != 200: continue
+                entries = r.json().get("feed", {}).get("entry", [])
+                for entry in entries[1:]:  # primo entry è info app
+                    title = entry.get("title", {}).get("label", "")
+                    body  = entry.get("content", {}).get("label", "")
+                    txt   = f"{title}. {body}".strip(". ")
+                    if len(txt.split()) < MIN_WORDS: continue
+                    if not is_negative(txt): continue
+                    issue = classify(txt)
+                    if issue == "altro": continue
+                    rating_str = entry.get("im:rating", {}).get("label", "5")
+                    try:
+                        if int(rating_str) >= 4: continue
+                    except: pass
+                    author = entry.get("author", {}).get("name", {}).get("label", "anon")
+                    date   = entry.get("updated", {}).get("label", "")[:10]
+                    if add(state, "appstore", author, date, cc.upper(), rating_str, issue, txt,
+                           f"https://apps.apple.com/{cc}/app/id{app_id}"):
+                        count += 1
+                time.sleep(random.uniform(1, 2))
+            except Exception as e:
+                log(f"  AppStore {app_name}/{cc}: {e}")
+    log(f"App Store: +{count} nuovi record")
+
+# ────────────────────────────────────────
+# FONTE 27: TRUSTPILOT (scraping __NEXT_DATA__)
+# ────────────────────────────────────────
+def run_trustpilot_v2(state, config):
+    if not config["sources_enabled"].get("trustpilot", True): return
+    log("Trustpilot: avvio")
+    count = 0
+    domains = {
+        "vinted.fr": "FR", "vinted.de": "DE", "vinted.es": "ES",
+        "vinted.co.uk": "GB", "vinted.it": "IT", "vinted.pl": "PL",
+        "ebay.com": "INT", "depop.com": "INT", "wallapop.com": "ES",
+    }
+    headers = {
+        "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/122.0.0.0 Safari/537.36"),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "DNT": "1",
+    }
+    for domain, cc in domains.items():
+        for page in range(1, 6):
+            try:
+                url = (f"https://www.trustpilot.com/review/{domain}"
+                       f"?languages=all&stars=1,2,3&page={page}")
+                r = requests.get(url, headers=headers, timeout=20)
+                if r.status_code != 200:
+                    break
+                soup   = BeautifulSoup(r.text, "lxml")
+                script = soup.find("script", id="__NEXT_DATA__")
+                if not script:
+                    break
+                data    = json.loads(script.string)
+                reviews = (data.get("props", {})
+                               .get("pageProps", {})
+                               .get("reviews", []))
+                if not reviews:
+                    break
+                for rev in reviews:
+                    title  = rev.get("title", "") or ""
+                    body   = rev.get("text", "") or ""
+                    txt    = f"{title}. {body}".strip(". ")
+                    if len(txt.split()) < MIN_WORDS: continue
+                    issue  = classify(txt)
+                    if issue == "altro": continue
+                    rating = rev.get("rating", 5)
+                    if rating >= 4: continue
+                    date   = rev.get("dates", {}).get("publishedDate", "")[:10]
+                    author = rev.get("consumer", {}).get("displayName", "anon")
+                    if add(state, "trustpilot", author, date, cc, str(rating), issue, txt,
+                           f"https://www.trustpilot.com/review/{domain}"):
+                        count += 1
+                time.sleep(random.uniform(4, 7))
+            except Exception as e:
+                log(f"  Trustpilot {domain} p{page}: {e}")
+    log(f"Trustpilot: +{count} nuovi record")
+
+# ────────────────────────────────────────
+# FONTE 28: SEARCH ENGINES (DuckDuckGo dorking su FB/IG/TT)
+# ────────────────────────────────────────
+def _search_bing(q, headers):
+    """Cerca su Bing, ritorna lista di (title, snippet, url)."""
+    r = requests.get("https://www.bing.com/search",
+                    params={"q": q, "count": 30}, headers=headers, timeout=15)
+    if r.status_code != 200: return []
+    soup = BeautifulSoup(r.text, "lxml")
+    out = []
+    for li in soup.find_all("li", class_="b_algo"):
+        h2 = li.find("h2")
+        link = h2.find("a") if h2 else None
+        if not link: continue
+        title = link.get_text(strip=True)
+        url   = link.get("href", "")
+        snip_el = li.find(class_=lambda c: c and ("b_lineclamp" in c or "b_caption" in c))
+        snippet = snip_el.get_text(separator=" ", strip=True) if snip_el else ""
+        out.append((title, snippet, url))
+    return out
+
+def _search_ddg(q, headers):
+    """Fallback DuckDuckGo HTML."""
+    r = requests.get("https://html.duckduckgo.com/html/",
+                    params={"q": q}, headers=headers, timeout=10)
+    if r.status_code != 200: return []
+    soup = BeautifulSoup(r.text, "lxml")
+    out = []
+    for result in soup.find_all("div", class_="result"):
+        title_el   = result.find("a", class_="result__a")
+        snippet_el = result.find("a", class_="result__snippet") or \
+                     result.find(class_="result__snippet")
+        if not snippet_el: continue
+        title   = title_el.get_text(strip=True) if title_el else ""
+        snippet = snippet_el.get_text(strip=True)
+        url     = title_el.get("href", "") if title_el else ""
+        out.append((title, snippet, url))
+    return out
+
+def run_search_engines(state, config):
+    if not config["sources_enabled"].get("search_engines", True): return
+    log("Search Engines: avvio")
+    count = 0
+    headers = {
+        "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/122.0.0.0 Safari/537.36"),
+        "Accept-Language": "en-US,en;q=0.9,it;q=0.8,fr;q=0.7,de;q=0.6,es;q=0.5",
+    }
+    sites = {
+        "facebook.com":   ("facebook_search",   300),
+        "instagram.com":  ("instagram_search",  300),
+        "tiktok.com":     ("tiktok_search",     300),
+        "trustpilot.com": ("trustpilot_search", 300),
+    }
+    # Set keyword completo (stesso usato da Reddit) — 6 lingue × 8 piattaforme
+    keywords = [
+        # ── VINTED ──
+        "vinted scam","vinted fake","vinted empty box","vinted fraud",
+        "vinted not received","vinted counterfeit","vinted refund denied",
+        "vinted seller disappeared","vinted not as described",
+        "vinted truffa","vinted falso","vinted pacco vuoto","vinted non arrivato",
+        "vinted rimborso negato","vinted truffato",
+        "vinted arnaque","vinted colis vide","vinted jamais reçu","vinted litige perdu",
+        "vinted betrug","vinted gefälscht","vinted nie angekommen","vinted abzocke",
+        "vinted estafa","vinted nunca llegó","vinted me estafaron","vinted fraude",
+        "vinted oszustwo","vinted podróbka","vinted pusta paczka",
+        # ── EBAY ──
+        "ebay scam","ebay fake","ebay fraud","ebay empty box",
+        "ebay not received","ebay counterfeit","ebay refund denied",
+        "ebay truffa","ebay falso","ebay non arrivato","ebay rimborso negato",
+        "ebay arnaque","ebay colis vide","ebay contrefaçon",
+        "ebay betrug","ebay gefälscht","ebay abzocke",
+        "ebay estafa","ebay me estafaron",
+        "ebay oszustwo","ebay podróbka",
+        # ── DEPOP ──
+        "depop scam","depop fake","depop fraud","depop not received",
+        "depop counterfeit","depop not as described",
+        "depop truffa","depop falso","depop arnaque","depop betrug",
+        # ── FACEBOOK MARKETPLACE ──
+        "facebook marketplace scam","facebook marketplace fake",
+        "facebook marketplace fraud","facebook marketplace not received",
+        "marketplace truffa","marketplace arnaque","marketplace betrug",
+        "marketplace estafa","fb marketplace scam","fb marketplace fake",
+        # ── WALLAPOP ──
+        "wallapop scam","wallapop fake","wallapop fraud","wallapop estafa",
+        "wallapop truffa","wallapop arnaque","wallapop betrug",
+        "wallapop me estafaron","wallapop fraude",
+        # ── SUBITO.IT ──
+        "subito truffa","subito falso","subito non arrivato",
+        "subito fregato","subito truffato","subito scam",
+        # ── LEBONCOIN ──
+        "leboncoin arnaque","leboncoin escroquerie","leboncoin faux",
+        "leboncoin jamais reçu","leboncoin fraude","leboncoin colis vide","leboncoin litige",
+        # ── KLEINANZEIGEN ──
+        "kleinanzeigen betrug","kleinanzeigen gefälscht","kleinanzeigen betrogen",
+        "kleinanzeigen abzocke","kleinanzeigen fake",
+        "ebay kleinanzeigen betrug","ebay kleinanzeigen fake",
+    ]
+    # Costruisci tutte le query e shuffle per diversificare ogni ciclo
+    queries = [(site, src, cap, kw) for site, (src, cap) in sites.items() for kw in keywords]
+    random.shuffle(queries)
+
+    site_counts = {src: 0 for src, _ in sites.values()}
+    site_caps   = {src: cap for src, cap in sites.values()}
+
+    bing_fail_streak = 0
+    for site, src, cap, kw in queries:
+        if site_counts[src] >= cap:
+            continue  # raggiunto limite per questa piattaforma
+        q = f"site:{site} {kw}"
+        results = []
+        engine = "bing"
+        # 1. prova Bing (primario)
+        if bing_fail_streak < 5:
+            try:
+                results = _search_bing(q, headers)
+                bing_fail_streak = 0 if results else bing_fail_streak + 1
+            except Exception as e:
+                bing_fail_streak += 1
+                log(f"  Bing '{q[:50]}': {e}")
+        # 2. fallback DDG se Bing fallisce
+        if not results:
+            engine = "ddg"
+            try:
+                results = _search_ddg(q, headers)
+            except Exception as e:
+                log(f"  DDG '{q[:50]}': {e}")
+        # 3. parsa risultati
+        for title, snippet, url in results:
+            txt = f"{title}. {snippet}".strip(". ")
+            if len(txt.split()) < MIN_WORDS: continue
+            if not is_negative(txt): continue
+            issue = classify(txt)
+            if issue == "altro": continue
+            if add(state, src, engine, datetime.now().strftime("%Y-%m-%d"),
+                   "INT", "", issue, txt, url):
+                count += 1
+                site_counts[src] += 1
+        time.sleep(random.uniform(2, 4))
+    log(f"Search Engines: +{count} nuovi record "
+        f"(FB:{site_counts.get('facebook_search',0)} "
+        f"IG:{site_counts.get('instagram_search',0)} "
+        f"TT:{site_counts.get('tiktok_search',0)} "
+        f"TP:{site_counts.get('trustpilot_search',0)})")
+
+# ────────────────────────────────────────
+# FONTE 29: GOOGLE PLAY STORE REVIEWS
+# ────────────────────────────────────────
+def run_playstore(state, config):
+    if not config["sources_enabled"].get("playstore", True): return
+    log("Play Store: avvio")
+    try:
+        from google_play_scraper import reviews, Sort
+    except ImportError:
+        log("  Play Store: libreria non installata (pip install google-play-scraper)")
+        return
+    count = 0
+    apps = [
+        ("com.vinted.android",  ["fr", "it", "de", "es", "pl", "en"]),
+        ("com.ebay.mobile",     ["us", "de", "fr", "it"]),
+        ("com.depop",           ["us", "gb", "it"]),
+        ("com.wallapop",        ["es", "it"]),
+        ("com.leboncoin.android.pro", ["fr"]),
+    ]
+    for pkg, langs in apps:
+        for lang in langs:
+            try:
+                result, _ = reviews(
+                    pkg,
+                    lang=lang,
+                    country=lang if lang not in ("en","gb") else "us",
+                    sort=Sort.NEWEST,
+                    count=100,
+                    filter_score_with=None,
+                )
+                for rev in result:
+                    if rev.get("score", 5) >= 4: continue
+                    txt = rev.get("content", "") or ""
+                    if len(txt.split()) < MIN_WORDS: continue
+                    if not is_negative(txt): continue
+                    issue = classify(txt)
+                    if issue == "altro": continue
+                    author = rev.get("userName", "anon")
+                    at = rev.get("at")
+                    date = at.strftime("%Y-%m-%d") if at else datetime.now().strftime("%Y-%m-%d")
+                    rating = str(rev.get("score", ""))
+                    cc = {"fr":"FR","it":"IT","de":"DE","es":"ES","pl":"PL","en":"INT"}.get(lang,"INT")
+                    if add(state, "playstore", author, date, cc, rating, issue, txt,
+                           f"https://play.google.com/store/apps/details?id={pkg}"):
+                        count += 1
+                time.sleep(random.uniform(2, 3))
+            except Exception as e:
+                log(f"  PlayStore {pkg}/{lang}: {e}")
+    log(f"Play Store: +{count} nuovi record")
+
+# ────────────────────────────────────────
 # LOOP PRINCIPALE — gira 24/7
 # ────────────────────────────────────────
 def main():
@@ -1632,27 +2182,44 @@ def main():
     log("MELION COLLECTOR — avvio ciclo continuo")
     log("="*50)
 
+    RECORD_LIMIT = 15_000  # fermati qui finché non aggiustiamo le fonti
+
     cycle = 0
     while True:
+        total = count_records()
+        if total >= RECORD_LIMIT:
+            log(f"\n🛑 Limite {RECORD_LIMIT} record raggiunto ({total} presenti). Collector in pausa.")
+            log("Riavvia manualmente quando le fonti sono pronte.")
+            break
+
         cycle += 1
+        _cycle_counts.clear()  # reset contatori per-source
+        _existing_counts.clear()
+        _existing_counts.update(count_per_source())  # snapshot record per fonte
         state = load_state()
         config = load_config()
-        total = count_records()
+
+        saturated = [s for s, n in _existing_counts.items() if n >= SOURCE_HARD_CAP]
         log(f"\n── CICLO {cycle} | Record totali: {total} ──")
+        if saturated:
+            log(f"   Fonti saturate (>={SOURCE_HARD_CAP}): {', '.join(sorted(saturated))}")
 
         # Tutte le fonti in parallelo simultaneamente
         all_sources = [
-            run_reddit,
-            run_youtube,
-            run_tiktok_v2,
-            run_instagram,
-            run_twitter_v2,
-            run_pissedconsumer,
-            run_sitejabber,
-            run_quora,
-            run_wykop,
-            run_gutefrage,
-            run_forocoches,
+            run_reddit,          # Reddit multi-subreddit
+            run_youtube,         # YouTube API comments+videos
+            run_google_news,     # Google News RSS
+            run_pissedconsumer,  # PissedConsumer reviews
+            run_sitejabber,      # Sitejabber reviews
+            run_trustpilot_v2,   # Trustpilot scraping
+            run_hackernews,      # Hacker News (Algolia API)
+            run_appstore,        # App Store reviews (iTunes RSS)
+            run_playstore,       # Play Store reviews (google-play-scraper)
+            run_search_engines,  # DDG dorking su Facebook/Instagram/TikTok
+            run_twitter_v2,      # Twitter/X API
+            run_forum_it,        # Forum italiani
+            run_forum_fr,        # Forum francesi
+            run_forum_de,        # Forum tedeschi
         ]
         threads = [threading.Thread(target=fn, args=(state, config), daemon=True)
                    for fn in all_sources]

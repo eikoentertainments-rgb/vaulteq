@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Melion — Dashboard Dati</title>
+<title>Melion — Dashboard Reclami Marketplace C2C</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
@@ -85,8 +85,9 @@
 <body>
 <header>
   <div>
-    <h1>Melion — Dashboard Reclami Vinted</h1>
+    <h1>Melion — Reclami Marketplace C2C</h1>
     <div class="sub" id="hdr-sub">Caricamento...</div>
+    <div class="sub" style="font-size:11px;opacity:.7;margin-top:1px">12 fonti · max 1000 record/fonte · limite 15.000</div>
   </div>
 </header>
 
@@ -247,6 +248,17 @@ const PROD_LABELS = {
   bambini_giocattoli:'🧸 Bambini & Giocattoli', libri_media:'📚 Libri & Media',
   undefined:'❓ Non classificato'
 };
+const SOURCE_LABELS = {
+  reddit:'Reddit', reddit_comment:'Reddit (commenti)', reddit_search:'Reddit (ricerca)',
+  youtube_comment:'YouTube (commenti)', youtube_video:'YouTube (video)',
+  trustpilot:'Trustpilot', sitejabber:'Sitejabber', pissedconsumer:'PissedConsumer',
+  hackernews:'Hacker News', google_news:'Google News',
+  appstore:'App Store', playstore:'Play Store',
+  twitter:'Twitter/X',
+  forum_it:'Forum IT', forum_fr:'Forum FR', forum_de:'Forum DE',
+  facebook_search:'Facebook (DDG)', instagram_search:'Instagram (DDG)',
+  tiktok_search:'TikTok (DDG)', trustpilot_search:'Trustpilot (DDG)'
+};
 
 function count(arr, key) {
   const m = {};
@@ -290,7 +302,7 @@ function renderOverview(data) {
 
   const srcs = count(data,'source');
   const sLabels = Object.keys(srcs).sort((a,b)=>srcs[b]-srcs[a]);
-  makeChart('c-source','bar',sLabels,sLabels.map(k=>srcs[k]));
+  makeChart('c-source','bar',sLabels.map(k=>SOURCE_LABELS[k]||k),sLabels.map(k=>srcs[k]));
 
   const ctrs = count(data,'country');
   const cLabels = Object.keys(ctrs).sort((a,b)=>ctrs[b]-ctrs[a]).slice(0,12);
@@ -380,7 +392,7 @@ function makeTable(records, page, perPage, containerId, onPageChange) {
       <thead><tr><th>Fonte</th><th>Data</th><th>Paese</th><th>Problema</th><th>Prodotto</th><th>Testo</th></tr></thead>
       <tbody>${slice.map((r,i)=>`
         <tr onclick="openModal(${i})">
-          <td><span class="badge src-badge">${r.source||'-'}</span></td>
+          <td><span class="badge src-badge">${SOURCE_LABELS[r.source]||r.source||'-'}</span></td>
           <td style="white-space:nowrap;color:#475569">${r.date||'-'}</td>
           <td style="font-weight:600">${r.country||'-'}</td>
           <td><span class="badge issue-badge">${ISSUE_LABELS[r.issue_type]||r.issue_type||'-'}</span></td>
@@ -455,11 +467,11 @@ function renderAll() {
 function allGoPage(p) { allPage=p; makeTable(filteredAll,allPage,PER,'all-table-container','allGoPage'); window.scrollTo({top:200,behavior:'smooth'}); }
 
 function populateFilters(data) {
-  const add = (selId, values) => {
+  const add = (selId, values, labelMap) => {
     const sel = document.getElementById(selId);
-    [...new Set(values)].filter(Boolean).sort().forEach(v=>sel.innerHTML+=`<option value="${v}">${v}</option>`);
+    [...new Set(values)].filter(Boolean).sort().forEach(v=>sel.innerHTML+=`<option value="${v}">${labelMap?(labelMap[v]||v):v}</option>`);
   };
-  add('f-source', data.map(r=>r.source));
+  add('f-source', data.map(r=>r.source), SOURCE_LABELS);
   add('f-issue', data.map(r=>r.issue_type));
   add('f-product', data.map(r=>r.product_category));
   add('f-country', data.map(r=>r.country));
