@@ -172,6 +172,7 @@ article li strong{color:var(--text)}
 .actor-section.venditore{border-left-color:#dc2626}
 .actor-section.corriere{border-left-color:#0284c7}
 .actor-section.compratore{border-left-color:#16a34a}
+.actor-section.gestore{border-left-color:#0891b2}
 .actor-section.piattaforma{border-left-color:#7c3aed}
 .actor-section h4{margin-top:0}
 .actor-section ol{counter-reset:item;list-style:none;margin-left:0;padding-left:0}
@@ -188,6 +189,7 @@ article li strong{color:var(--text)}
 .actor-section.venditore ol li::before{background:#fef2f2;color:#991b1b}
 .actor-section.corriere ol li::before{background:#eff6ff;color:#075985}
 .actor-section.compratore ol li::before{background:#f0fdf4;color:#166534}
+.actor-section.gestore ol li::before{background:#ecfeff;color:#155e75}
 .actor-section.piattaforma ol li::before{background:#f5f3ff;color:#5b21b6}
 
 /* Tables */
@@ -304,7 +306,8 @@ footer a:hover{color:var(--green)}
   </a>
   <div class="nav-links">
     <a href="progetto.html">Progetto</a>
-    <a href="dashboard.html">Dashboard</a>
+    <a href="insights.html">Insights</a>
+    <a href="tam-sam-som.html">TAM/SAM/SOM</a>
     <a href="problema.html" class="active">Il Problema</a>
   </div>
 </nav>
@@ -338,10 +341,13 @@ footer a:hover{color:var(--green)}
 <p>Non si froda perché la gente è cattiva. Si froda perché <strong>il sistema lo permette</strong>. Quando il rischio di essere scoperti è vicino allo zero e il guadagno è immediato, una parte di persone ne approfitta. Non è una legge della natura — è una legge dell'opportunità. Togli l'opportunità, togli gran parte della frode.</p>
 
 <h3>Perché i corrieri fanno quello che vogliono</h3>
-<p>Il corriere riceve un pacco chiuso, lo trasporta e lo consegna. Nessuno sa cosa c'era dentro al momento della partenza. Nessuno sa esattamente cosa è successo durante il trasporto. Il tracking dice dove è il pacco — non cosa contiene, non in che stato è, non chi lo ha maneggiato. In assenza di prove, il corriere è di fatto <strong>immune da responsabilità concrete</strong> — non perché la legge lo tuteli, ma perché nessuno può dimostrare nulla.</p>
+<p>Il corriere riceve un pacco chiuso, lo trasporta e lo consegna. Nessuno sa cosa c'era dentro al momento della partenza. Nessuno sa esattamente cosa è successo durante il trasporto. Il tracking dice dove è il pacco — non cosa contiene, non in che stato è, non chi lo ha maneggiato. E con frequenza preoccupante <strong>il tracking stesso si blocca</strong>: il pacco entra in uno snodo di smistamento e non ne esce più, non viene consegnato, non viene rispedito al mittente, semplicemente <em>sparisce nell'oblio</em> senza spiegazioni. In assenza di prove, il corriere è di fatto <strong>immune da responsabilità concrete</strong> — non perché la legge lo tuteli, ma perché nessuno può dimostrare nulla.</p>
 
 <h3>Perché i compratori si comportano così</h3>
-<p>Alcuni mentono deliberatamente. Ma molti agiscono in quella zona grigia dove <strong>il dubbio è genuino</strong> — il pacco è arrivato davvero vuoto, oppure il tracking mente, oppure qualcuno in condominio ha ritirato senza dirlo. Il sistema non distingue la buona dalla mala fede — e questa ambiguità diventa terreno fertile per chi vuole approfittarsene.</p>
+<p>Alcuni mentono deliberatamente — e i pattern ricorrenti sono ben noti: chi nega di aver ricevuto il pacco, chi apre dispute false dichiarando l'oggetto rotto o non conforme, chi restituisce un oggetto diverso da quello ricevuto, chi paga con screenshot di bonifico falsi e sparisce. Ma molti altri agiscono in quella zona grigia dove <strong>il dubbio è genuino</strong> — il pacco è arrivato davvero vuoto, oppure il tracking mente, oppure qualcuno in condominio ha ritirato senza dirlo. Il sistema non distingue la buona dalla mala fede — e questa ambiguità diventa terreno fertile per chi vuole approfittarsene.</p>
+
+<h3>Perché le piattaforme decidono così</h3>
+<p>Le piattaforme non hanno strumenti per stabilire la verità. Quando scoppia una disputa vedono solo screenshot, foto pre-imballaggio caricate <em>dopo</em> il problema, narrazioni opposte tra le parti. Senza prove oggettive raccolte nel momento giusto, ogni decisione è una scommessa statistica. La logica diventa economica: tutelare il compratore — più frequente, più prezioso da trattenere come utente — e accettare che il venditore, con meno potere contrattuale, paghi il costo dell'incertezza. Non è cattiveria, è <strong>arbitraggio del rischio</strong>. Una scelta razionale presa in assenza di prove.</p>
 
 <div class="paradox">
   <h4>⚡ Il paradosso</h4>
@@ -366,7 +372,7 @@ footer a:hover{color:var(--green)}
   <ol>
     <li><strong>Oggetto falso</strong> — non sempre riconoscibile sul momento (borse, orologi, elettronica)</li>
     <li><strong>Banconote false</strong> — rischio opposto, subìto dal venditore</li>
-    <li><strong>Post-transazione</strong> — nessuna prova, nessun rimedio, nessuna rintracciabilità. Chi si è visto si è visto.</li>
+    <li><strong>Post-transazione</strong> — è lo scenario <em>più anonimo in assoluto</em>: nessun account, nessuna email, nessun nickname, nessun numero di tracciamento, nessuna ricevuta digitale. Spesso nemmeno il vero nome dell'altro. Una volta separati, non c'è alcun appiglio per ritrovarsi né tantomeno per provare cosa è successo. Chi si è visto si è visto.</li>
   </ol>
 </div>
 
@@ -407,10 +413,13 @@ footer a:hover{color:var(--green)}
   <div class="actor-section compratore">
     <h4>🛒 Compratore</h4>
     <ol>
+      <li><strong>Pagamento con screenshot falso</strong> — mostra al venditore un'immagine di bonifico fasullo e sparisce prima che la banca confermi nulla</li>
       <li><strong>Tracking mostra "consegnato" ma il compratore nega la ricezione</strong> — buona o mala fede, il venditore non ha prove del contenuto</li>
+      <li><strong>Falso reclamo di oggetto danneggiato o non conforme</strong> — apre una disputa fittizia per ottenere il rimborso pur tenendo l'oggetto</li>
+      <li><strong>Restituzione di oggetto sostituito</strong> — riceve l'originale, rispedisce un oggetto diverso (vecchio, rotto, fake) per ottenere il rimborso</li>
       <li><strong>Post-transazione</strong> — nessuna prova, nessun rimedio, nessuna rintracciabilità</li>
     </ol>
-    <div class="insight">Il compratore è l'attore più esposto — paga prima, riceve dopo, senza possibilità di ispezionare.</div>
+    <div class="insight">Il compratore è strutturalmente <strong>biforco</strong>: è l'attore più esposto (paga prima, riceve dopo, senza ispezionare), ma anche quello con le leve di frode più sottovalutate. Il sistema lo protegge per default — e questo crea spazio per chi vuole abusarne.</div>
   </div>
 </div>
 
@@ -433,7 +442,7 @@ footer a:hover{color:var(--green)}
       <li><strong>Oggetto falso</strong> — spedisce consapevolmente un falso</li>
       <li><strong>Foto false</strong> — annuncio non corrisponde all'oggetto reale</li>
       <li><strong>Pacco vuoto o oggetto sostituito</strong> — imballa intenzionalmente il pacco sbagliato</li>
-      <li><strong>Fondi bloccati</strong> — la piattaforma trattiene il pagamento in modo arbitrario o prolungato</li>
+      <li><strong>Fondi bloccati</strong> — la piattaforma trattiene il pagamento in modo arbitrario o prolungato <span style="display:inline-block;font-size:.78rem;color:#7c3aed;background:#f5f3ff;padding:2px 8px;border-radius:6px;margin-left:6px;font-weight:600">↘ effetto del bias piattaforma — vedi sotto</span></li>
       <li><strong>Account sospeso senza preavviso</strong> — perde accesso a fondi e storico vendite</li>
       <li><strong>Post-transazione</strong> — nessuna prova, nessun rimedio, nessuna rintracciabilità</li>
     </ol>
@@ -461,11 +470,22 @@ footer a:hover{color:var(--green)}
     <div class="insight">Il compratore è l'attore più tutelato — le piattaforme lo privilegiano strutturalmente perché è l'utente economicamente più prezioso da trattenere.</div>
   </div>
 
+  <div class="actor-section gestore">
+    <h4>💳 Gestore pagamenti</h4>
+    <ol>
+      <li><strong>Ritardi nei trasferimenti</strong> — fondi trattenuti per giorni "in elaborazione" senza spiegazioni dirette</li>
+      <li><strong>Blocchi fondi arbitrari</strong> — sospende account o congela importi in nome di "controlli di compliance" senza preavviso e senza tempi certi di risoluzione</li>
+      <li><strong>Commissioni nascoste o variabili</strong> — fee dichiarate basse all'iscrizione che si moltiplicano con conversioni valuta, prelievi, transazioni cross-border</li>
+      <li><strong>KYC e anti-frode insufficienti</strong> — verifica identità superficiale che permette ai truffatori di operare per mesi prima di essere bloccati</li>
+    </ol>
+    <div class="insight">Il gestore pagamenti è l'attore più invisibile della catena — l'utente lo conosce solo quando qualcosa va storto. Opera in autonomia rispetto alla piattaforma e segue le proprie logiche di rischio finanziario, che spesso non coincidono con quelle del marketplace né con quelle dell'utente.</div>
+  </div>
+
   <div class="actor-section piattaforma">
     <h4>🏛️ Piattaforma</h4>
     <ol>
       <li><strong>Decisione automatica senza prove</strong> — risolve le dispute con algoritmi, non con evidenze reali</li>
-      <li><strong>Bias sistematico verso il compratore</strong> — causa diretta del blocco fondi al venditore: tende a rimborsare il compratore indipendentemente dai fatti per non perderlo</li>
+      <li><strong>Bias sistematico verso il compratore</strong> — tende a rimborsare il compratore indipendentemente dai fatti per non perderlo. <span style="display:inline-block;font-size:.78rem;color:#dc2626;background:#fef2f2;padding:2px 8px;border-radius:6px;margin-left:6px;font-weight:600">↗ è la causa del "Fondi bloccati" del venditore</span></li>
       <li><strong>Nessun appello</strong> — la decisione è definitiva, l'attore penalizzato non ha rimedio</li>
       <li><strong>Costo dispute irrisolvibili</strong> — quando non riesce a stabilire chi ha ragione rimborsa entrambi, perdendo il doppio. Su milioni di transazioni questo diventa un costo strutturale enorme e silenzioso</li>
     </ol>
@@ -494,15 +514,89 @@ footer a:hover{color:var(--green)}
 </div>
 
 <!-- SCENARIO 4 -->
-<div class="scenario-card" style="opacity:0.7;background:var(--bg2)">
+<div class="scenario-card">
   <div class="scen-label">Scenario 4</div>
-  <h3>Da costruire</h3>
-  <div class="meta">Escrow P2P — sezione in lavorazione.</div>
+  <h3>P2P online con escrow, fuori dai marketplace</h3>
+  <div class="actors">
+    <span>🛒 Compratore</span>
+    <span>🏪 Venditore</span>
+    <span>📦 Corriere</span>
+    <span>💳 Gestore escrow</span>
+  </div>
+  <div class="meta">Accordo tramite WhatsApp, Telegram, Instagram, Facebook — ma il pagamento transita da un servizio escrow di terze parti che trattiene i fondi finché la transazione non è confermata. Esempi: PayPal Goods &amp; Services, Mangopay, Stripe Connect, Wise.</div>
+
+  <div class="actor-section venditore">
+    <h4>🏪 Venditore</h4>
+    <ol>
+      <li><strong>Oggetto falso</strong> — spedisce consapevolmente un falso</li>
+      <li><strong>Foto false</strong> — annuncio non corrisponde all'oggetto reale</li>
+      <li><strong>Pacco vuoto o oggetto sostituito</strong> — imballa intenzionalmente il pacco sbagliato</li>
+      <li><strong>Fondi bloccati</strong> — l'escrow trattiene il pagamento per tempi lunghi o indefiniti durante una disputa <span style="display:inline-block;font-size:.78rem;color:#7c3aed;background:#f5f3ff;padding:2px 8px;border-radius:6px;margin-left:6px;font-weight:600">↘ effetto del bias gestore — vedi sotto</span></li>
+      <li><strong>Account chiuso senza preavviso</strong> — l'escrow sospende l'account per controlli compliance, perde accesso a fondi e storico</li>
+      <li><strong>Post-transazione</strong> — nessuna prova, nessun rimedio, nessuna rintracciabilità</li>
+    </ol>
+    <div class="insight">L'escrow protegge il venditore solo contro il rischio del compratore che non paga. Ma su tutto il resto — verifica oggetto, valutazione disputa, decisione finale — il venditore è esposto come prima.</div>
+  </div>
+
+  <div class="actor-section corriere">
+    <h4>📦 Corriere</h4>
+    <ol>
+      <li><strong>Pacco perso</strong> — sparisce durante il trasporto, responsabilità non provabile</li>
+      <li><strong>Pacco danneggiato</strong> — arriva rotto, responsabilità non provabile senza documentazione</li>
+      <li><strong>Pacco consegnato "per finta"</strong> — tracking mostra consegnato ma fisicamente non è mai arrivato</li>
+      <li><strong>Pacco trafugato</strong> — arriva integro all'esterno ma il contenuto è stato rubato durante il trasporto</li>
+    </ol>
+    <div class="insight">Il corriere opera identicamente agli scenari precedenti — l'escrow non lo controlla, non lo paga, non lo conosce. È cieco a tutto ciò che succede in transito.</div>
+  </div>
+
+  <div class="actor-section compratore">
+    <h4>🛒 Compratore</h4>
+    <ol>
+      <li><strong>Oggetto falso non riconoscibile</strong> — l'escrow non verifica l'autenticità, accetta solo la dichiarazione del compratore</li>
+      <li><strong>Tracking mostra "consegnato" ma il compratore nega la ricezione</strong> — buona o mala fede, il venditore non ha prove del contenuto</li>
+      <li><strong>Falso reclamo di oggetto danneggiato o non conforme</strong> — apre una disputa fittizia per ottenere il rimborso pur tenendo l'oggetto</li>
+      <li><strong>Restituzione di oggetto sostituito</strong> — riceve l'originale, rispedisce un oggetto diverso (vecchio, rotto, fake) per ottenere il rimborso</li>
+      <li><strong>Post-transazione</strong> — nessuna prova, nessun rimedio, nessuna rintracciabilità</li>
+    </ol>
+    <div class="insight">L'escrow tutela il compratore dal rischio di pagare e non ricevere nulla. Ma quando l'oggetto arriva e il problema è la <em>qualità</em> di ciò che è dentro il pacco, il compratore può abusare delle stesse leve di Scenario 3 — perché chi giudica vede solo screenshot.</div>
+  </div>
+
+  <div class="actor-section gestore">
+    <h4>💳 Gestore escrow</h4>
+    <ol>
+      <li><strong>Decisione automatica senza prove</strong> — risolve le dispute con algoritmi e linee guida interne, non con evidenze reali</li>
+      <li><strong>Bias variabile e opaco</strong> — alcuni gestori favoriscono il compratore (PayPal G&amp;S notoriamente), altri il venditore. Le regole non sono pubbliche e cambiano caso per caso</li>
+      <li><strong>Nessun appello reale</strong> — la decisione è definitiva, l'escalation è limitata, il customer support è spesso solo un canale formale</li>
+      <li><strong>Costo dispute irrisolvibili</strong> — quando non riesce a stabilire chi ha ragione, rimborsa entrambi a spese proprie. Lo stesso problema strutturale dei marketplace</li>
+    </ol>
+    <div class="insight">L'escrow ha sostituito la piattaforma come arbitro — ma con esattamente gli stessi strumenti, ovvero <strong>nessuno</strong>. Vede screenshot, foto post-fatto, narrazioni opposte. La vera differenza con lo Scenario 3 è che qui la piattaforma non c'è — il canale di accordo (WhatsApp, Telegram) è neutro e non risponde di niente. Il gestore escrow è solo, davanti agli stessi due tasti che premerebbe la piattaforma.</div>
+
+    <p>Le tre opzioni davanti a una disputa irrisolvibile sono identiche a quelle dello Scenario 3:</p>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Opzione</th><th>Conseguenza</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Libera i fondi al venditore</td><td>Compratore truffato, churn assicurato</td></tr>
+        <tr><td>Restituisce al compratore</td><td>Venditore truffato, account chiude</td></tr>
+        <tr><td>Divide o rimborsa entrambi</td><td>Perde sempre — soldi reali su disputa indecidibile</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-style:italic;color:var(--text2)">In tutti e tre i casi <strong>il gestore escrow paga il prezzo dell'incertezza</strong>, esattamente come la piattaforma.</p>
+  </div>
+
+  <div class="paradox">
+    <h4>💡 Il paradosso dello scenario 4</h4>
+    <p>L'escrow risolve <strong>un solo problema</strong>: il venditore non può più sparire con i soldi senza spedire, il compratore non può più pagare con screenshot fasulli. È un upgrade <em>finanziario</em> reale.</p>
+    <p class="big">Ma quando il pacco arriva e si apre, ricadiamo nello stesso vuoto probatorio dello Scenario 3. L'escrow sposta dove sta il denaro — non dove sta la verità.</p>
+  </div>
 </div>
 
 <!-- ═══════════ X WORLD ═══════════ -->
 <div class="x-world">
-  <div class="x-label">Scenario X</div>
+  <div class="x-label">Scenario Ideale</div>
   <h2>Il mondo perfetto</h2>
   <p style="font-style:italic;color:#94a3b8;margin-top:8px">Non è il futuro — è il punto di riferimento assoluto. Il benchmark impossibile contro cui misurare tutto il resto.</p>
 
@@ -549,12 +643,13 @@ footer a:hover{color:var(--green)}
   <em>Chi ha ricevuto cosa e quando?</em>
 </div>
 
-<p>Lo scenario X non esiste — ma ci dice qualcosa di preciso: se rispondessimo a queste quattro domande con certezza assoluta, il problema della frode nelle transazioni online <strong>svanirebbe quasi completamente</strong>.</p>
+<p>Lo scenario ideale non esiste — ma ci dice qualcosa di preciso: se rispondessimo a queste quattro domande con certezza assoluta, il problema della frode nelle transazioni online <strong>svanirebbe quasi completamente</strong>.</p>
 
 <h3>Come si stabilisce chi ha ragione?</h3>
 <p style="font-size:1.2rem;font-weight:600;color:var(--green)">Per esclusione.</p>
 <p>Non devi provare chi ha torto. Devi escludere con prove certe chi non può avere torto — finché rimane un solo attore possibile.</p>
 <ul>
+  <li>Se ho escluso compratore e corriere — rimane il <strong>venditore</strong></li>
   <li>Se ho escluso venditore e compratore — rimane il <strong>corriere</strong></li>
   <li>Se ho escluso venditore e corriere — rimane il <strong>compratore</strong></li>
   <li>Se ho escluso tutti — la transazione è andata bene</li>
@@ -573,15 +668,16 @@ footer a:hover{color:var(--green)}
 </article>
 
 <section class="final-cta">
-  <h2>È esattamente questo che Vaulteq sta costruendo.</h2>
-  <p>Un protocollo che produce prove oggettive nel momento giusto, dove serve, da tutte le parti coinvolte. Niente più parola contro parola.</p>
-  <a href="progetto.html" class="btn">Scopri Vaulteq →</a>
+  <h2>Queste quattro domande sono la sfida.</h2>
+  <p>Costruire un protocollo che le risolva — in modo oggettivo, in tempo reale, con tutte le parti coinvolte — è quello a cui stiamo lavorando. Vaulteq è il nostro tentativo.</p>
+  <a href="progetto.html" class="btn">Vedi cosa stiamo costruendo →</a>
 </section>
 
 <footer>
   <a href="index.html">Home</a>
   <a href="progetto.html">Progetto</a>
-  <a href="dashboard.html">Dashboard reclami</a>
+  <a href="insights.html">Insights reclami</a>
+  <a href="tam-sam-som.html">TAM/SAM/SOM</a>
   <a href="problema.html">Il Problema</a>
   <div style="margin-top:14px">© 2026 Vaulteq</div>
 </footer>

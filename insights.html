@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vaulteq — Dashboard Reclami Marketplace C2C</title>
+<title>Vaulteq — Insights · Reclami Marketplace C2C</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
@@ -106,7 +106,7 @@
 <body>
 <header>
   <div>
-    <h1>Vaulteq — Reclami Marketplace C2C</h1>
+    <h1>Vaulteq Insights — Reclami Marketplace C2C</h1>
     <div class="sub" id="hdr-sub">Caricamento...</div>
     <div class="sub" style="font-size:11px;opacity:.7;margin-top:1px">12 fonti · max 1000 record/fonte · limite 15.000</div>
   </div>
@@ -114,6 +114,7 @@
     <a href="index.html" style="color:white;text-decoration:none;opacity:.85" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.85'">🏠 Home</a>
     <a href="progetto.html" style="color:white;text-decoration:none;opacity:.85" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.85'">Progetto</a>
     <a href="problema.html" style="color:white;text-decoration:none;opacity:.85" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.85'">Il Problema</a>
+    <a href="tam-sam-som.html" style="color:white;text-decoration:none;opacity:.85" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.85'">TAM/SAM/SOM</a>
   </nav>
 </header>
 
@@ -208,13 +209,14 @@
     <!-- TABS -->
     <div class="tabs-wrap">
       <div class="tabs">
-        <div class="tab active" onclick="showTab('overview')">Panoramica</div>
-        <div class="tab" onclick="showTab('problems')">Per Problema</div>
-        <div class="tab" onclick="showTab('products')">Per Prodotto</div>
-        <div class="tab" onclick="showTab('marketplace')">Per Marketplace</div>
-        <div class="tab" onclick="showTab('actors')">Per Attore</div>
-        <div class="tab" onclick="showTab('press')">📰 Stampa</div>
-        <div class="tab" onclick="showTab('all')">Tutti i Record</div>
+        <div class="tab active" onclick="showTab('overview')">📊 Per Panoramica</div>
+        <div class="tab" onclick="showTab('problems')">🚨 Per Problema</div>
+        <div class="tab" onclick="showTab('products')">📦 Per Prodotto</div>
+        <div class="tab" onclick="showTab('marketplace')">🛒 Per Marketplace</div>
+        <div class="tab" onclick="showTab('actors')">👥 Per Attore</div>
+        <div class="tab" onclick="showTab('press')">📰 Per Stampa</div>
+        <div class="tab" onclick="showTab('amounts')">💰 Per Importi</div>
+        <div class="tab" onclick="showTab('all')">📋 Per Tutti</div>
       </div>
     </div>
 
@@ -300,6 +302,35 @@
       </div>
       <div id="press-stats" style="margin:14px 0;color:#64748b;font-size:14px"></div>
       <div id="press-cards"></div>
+    </div>
+
+    <!-- TAB: IMPORTI (record che parlano di soldi) -->
+    <div class="panel" id="tab-amounts">
+      <div style="background:#f0fdf4;padding:14px 18px;border-radius:10px;margin-bottom:18px;font-size:14px;color:#14532d">
+        💰 <strong>Tracking degli importi</strong> — record in cui si parla esplicitamente di soldi (€, $, £, "euro", "dollari", "sterline"). Estratti automaticamente dal testo.
+      </div>
+      <div id="amounts-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px"></div>
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:18px">
+        <h3 style="margin:0 0 14px;font-size:15px;color:#475569;font-weight:600">Distribuzione importi (€/$/£ uniti)</h3>
+        <div style="position:relative;height:240px"><canvas id="amounts-chart"></canvas></div>
+      </div>
+      <div class="filters">
+        <input type="text" id="amounts-search" placeholder="Cerca nel testo..." oninput="renderAmounts()">
+        <select id="amounts-currency" onchange="renderAmounts()">
+          <option value="">Tutte le valute</option>
+          <option value="EUR">€ Euro</option>
+          <option value="USD">$ Dollari</option>
+          <option value="GBP">£ Sterline</option>
+        </select>
+        <select id="amounts-issue" onchange="renderAmounts()"><option value="">Tutti i problemi</option></select>
+        <select id="amounts-sort" onchange="renderAmounts()">
+          <option value="desc">Importo: alto → basso</option>
+          <option value="asc">Importo: basso → alto</option>
+          <option value="recent">Più recenti</option>
+        </select>
+      </div>
+      <div id="amounts-table-stats" style="margin:14px 0;color:#64748b;font-size:14px"></div>
+      <div id="amounts-table-container"></div>
     </div>
 
     <!-- TAB: TUTTI -->
@@ -632,11 +663,190 @@ function populateFilters(data) {
 }
 
 function showTab(name) {
-  const tabs = ['overview','problems','products','marketplace','actors','press','all'];
+  const tabs = ['overview','problems','products','marketplace','actors','press','amounts','all'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', tabs[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if (name === 'press') renderPress();
+  if (name === 'amounts') renderAmounts();
+}
+
+// ── AMOUNTS TAB ──
+const CURRENCY_SYMBOL = {EUR:'€', USD:'$', GBP:'£'};
+let amountsInited = false;
+let amountsChart = null;
+
+function _parseAmountNumber(s) {
+  s = s.trim();
+  if (!s) return NaN;
+  const hasDot = s.includes('.'), hasComma = s.includes(',');
+  if (hasDot && hasComma) {
+    const lastDot = s.lastIndexOf('.'), lastComma = s.lastIndexOf(',');
+    return lastDot > lastComma
+      ? parseFloat(s.replace(/,/g,''))           // 1,234.56 EN
+      : parseFloat(s.replace(/\./g,'').replace(',','.')); // 1.234,56 IT
+  }
+  if (hasComma) {
+    const parts = s.split(',');
+    if (parts.length === 2 && parts[1].length === 3) return parseInt(s.replace(/,/g,''));
+    return parseFloat(s.replace(',', '.'));
+  }
+  if (hasDot) {
+    const parts = s.split('.');
+    if (parts.length === 2 && parts[1].length === 3) return parseInt(s.replace(/\./g,''));
+    return parseFloat(s);
+  }
+  return parseFloat(s);
+}
+function _normalizeCurrency(c) {
+  c = (c||'').toLowerCase();
+  if (c === '€' || c.startsWith('eur') || c.startsWith('euro')) return 'EUR';
+  if (c === '$' || c.startsWith('usd') || c.startsWith('dollar') || c.startsWith('dolar')) return 'USD';
+  if (c === '£' || c.startsWith('gbp') || c.startsWith('pound') || c.startsWith('sterl')) return 'GBP';
+  return 'EUR';
+}
+function extractAmounts(text) {
+  if (!text) return [];
+  const out = [];
+  const numRe = '\\d{1,3}(?:[.,]\\d{3})+(?:[.,]\\d+)?|\\d+(?:[.,]\\d+)?';
+  // simbolo + numero
+  const re1 = new RegExp(`([€$£])\\s*(${numRe})`, 'g');
+  // numero + simbolo
+  const re2 = new RegExp(`(${numRe})\\s*([€$£])(?![a-z])`, 'g');
+  // numero + parola valuta
+  const re3 = new RegExp(`(${numRe})\\s*(euros?|EUR|dollar[is]?|dolar[ie]s?|USD|pounds?|GBP|sterlin[ea]|sterling)`, 'gi');
+  // parola valuta + numero
+  const re4 = new RegExp(`(euros?|EUR|dollar[is]?|dolar[ie]s?|USD|pounds?|GBP|sterlin[ea]|sterling)\\s*(${numRe})`, 'gi');
+  const seen = new Set();
+  function push(num, cur, raw) {
+    const v = _parseAmountNumber(num);
+    if (isNaN(v) || v < 1 || v > 1000000) return;
+    const key = v + '|' + raw.replace(/\s+/g,'');
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({value: v, currency: _normalizeCurrency(cur), raw: raw.trim()});
+  }
+  let m;
+  while ((m = re1.exec(text)) !== null) push(m[2], m[1], m[0]);
+  while ((m = re2.exec(text)) !== null) push(m[1], m[2], m[0]);
+  while ((m = re3.exec(text)) !== null) push(m[1], m[2], m[0]);
+  while ((m = re4.exec(text)) !== null) push(m[2], m[1], m[0]);
+  return out;
+}
+
+function renderAmounts() {
+  // estrai per ogni record gli importi
+  const records = ALL.map(r => {
+    const amts = extractAmounts(r.text || '');
+    if (!amts.length) return null;
+    const max = amts.reduce((a,b) => b.value > a.value ? b : a);
+    return {...r, amounts: amts, primaryAmount: max};
+  }).filter(Boolean);
+
+  if (!amountsInited) {
+    const issues = [...new Set(records.map(r => r.issue_type))].filter(Boolean).sort();
+    const sel = document.getElementById('amounts-issue');
+    issues.forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
+    amountsInited = true;
+  }
+
+  // filtri
+  const q = document.getElementById('amounts-search').value.toLowerCase();
+  const fc = document.getElementById('amounts-currency').value;
+  const fi = document.getElementById('amounts-issue').value;
+  const sort = document.getElementById('amounts-sort').value;
+  let filtered = records.filter(r => {
+    if (fc && r.primaryAmount.currency !== fc) return false;
+    if (fi && r.issue_type !== fi) return false;
+    if (q && !(r.text||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if (sort === 'desc') filtered.sort((a,b) => b.primaryAmount.value - a.primaryAmount.value);
+  else if (sort === 'asc') filtered.sort((a,b) => a.primaryAmount.value - b.primaryAmount.value);
+  else filtered.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  // stat cards (somma in valuta, separati)
+  const sums = {EUR:0, USD:0, GBP:0};
+  const counts = {EUR:0, USD:0, GBP:0};
+  filtered.forEach(r => {
+    sums[r.primaryAmount.currency] += r.primaryAmount.value;
+    counts[r.primaryAmount.currency] += 1;
+  });
+  const totalRecords = filtered.length;
+  const allValues = filtered.map(r => r.primaryAmount.value);
+  const avg = allValues.length ? allValues.reduce((a,b)=>a+b,0)/allValues.length : 0;
+  const max = allValues.length ? Math.max(...allValues) : 0;
+
+  const fmt = n => n.toLocaleString('it-IT', {maximumFractionDigits:0});
+  const cardStyle = 'background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px';
+  const labelStyle = 'font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600';
+  const valStyle = 'font-size:24px;font-weight:700;color:#16a34a;margin-top:4px';
+
+  let cards = `
+    <div style="${cardStyle}"><div style="${labelStyle}">Record con importi</div><div style="${valStyle}">${totalRecords.toLocaleString('it-IT')}</div></div>
+    <div style="${cardStyle}"><div style="${labelStyle}">Importo medio</div><div style="${valStyle}">${fmt(avg)}</div></div>
+    <div style="${cardStyle}"><div style="${labelStyle}">Massimo</div><div style="${valStyle}">${fmt(max)}</div></div>`;
+  if (counts.EUR) cards += `<div style="${cardStyle}"><div style="${labelStyle}">Totale € (${counts.EUR} rec)</div><div style="${valStyle}">€ ${fmt(sums.EUR)}</div></div>`;
+  if (counts.USD) cards += `<div style="${cardStyle}"><div style="${labelStyle}">Totale $ (${counts.USD} rec)</div><div style="${valStyle}">$ ${fmt(sums.USD)}</div></div>`;
+  if (counts.GBP) cards += `<div style="${cardStyle}"><div style="${labelStyle}">Totale £ (${counts.GBP} rec)</div><div style="${valStyle}">£ ${fmt(sums.GBP)}</div></div>`;
+  document.getElementById('amounts-stats').innerHTML = cards;
+
+  // distribuzione (histogram)
+  const buckets = [
+    {label:'< 50',    min:0,    max:50},
+    {label:'50-200',  min:50,   max:200},
+    {label:'200-500', min:200,  max:500},
+    {label:'500-1k',  min:500,  max:1000},
+    {label:'1k-5k',   min:1000, max:5000},
+    {label:'5k-20k',  min:5000, max:20000},
+    {label:'> 20k',   min:20000,max:Infinity},
+  ];
+  const histData = buckets.map(b => filtered.filter(r => r.primaryAmount.value >= b.min && r.primaryAmount.value < b.max).length);
+  if (amountsChart) amountsChart.destroy();
+  amountsChart = new Chart(document.getElementById('amounts-chart'), {
+    type:'bar',
+    data:{
+      labels: buckets.map(b => b.label),
+      datasets:[{label:'Record', data:histData, backgroundColor:'#16a34a', borderRadius:6}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true, ticks:{stepSize:Math.max(1, Math.ceil(Math.max(...histData)/10))}}}
+    }
+  });
+
+  // tabella top
+  document.getElementById('amounts-table-stats').textContent =
+    `${totalRecords} record con importi su ${ALL.length} totali (${(100*totalRecords/ALL.length).toFixed(1)}%)`;
+  const top = filtered.slice(0, 200);
+  const rows = top.map(r => {
+    const sym = CURRENCY_SYMBOL[r.primaryAmount.currency] || r.primaryAmount.currency;
+    const allAmts = r.amounts.map(a => `${CURRENCY_SYMBOL[a.currency]||a.currency}${fmt(a.value)}`).join(' · ');
+    const txt = (r.text||'').replace(/</g,'&lt;');
+    return `
+      <tr>
+        <td style="font-weight:700;color:#16a34a;font-size:15px;white-space:nowrap">${sym}${fmt(r.primaryAmount.value)}</td>
+        <td style="font-size:11px;color:#94a3b8">${allAmts}</td>
+        <td style="font-size:13px;color:#0f172a;max-width:520px">${txt.slice(0,260)}${txt.length>260?'…':''}</td>
+        <td style="font-size:12px;color:#64748b">${r.issue_type||'—'}</td>
+        <td style="font-size:12px;color:#64748b;white-space:nowrap">${r.source||'—'}</td>
+        <td>${r.url ? `<a href="${r.url}" target="_blank" style="color:#2563eb;text-decoration:none;font-size:13px">↗</a>` : ''}</td>
+      </tr>`;
+  }).join('');
+  const html = `
+    <table style="width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
+      <thead><tr style="background:#f8fafc">
+        <th style="padding:12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#475569">Importo</th>
+        <th style="padding:12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#475569">Tutti</th>
+        <th style="padding:12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#475569">Testo</th>
+        <th style="padding:12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#475569">Problema</th>
+        <th style="padding:12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#475569">Fonte</th>
+        <th style="padding:12px"></th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="6" style="padding:30px;text-align:center;color:#94a3b8">Nessun importo trovato.</td></tr>'}</tbody>
+    </table>`;
+  document.getElementById('amounts-table-container').innerHTML = html;
 }
 
 // ── PRESS TAB ──
@@ -798,7 +1008,7 @@ Papa.parse('data/vinted_complaints.csv?v=' + Date.now(), {
     setTimeout(()=>location.reload(), 300000);
   },
   error() {
-    document.getElementById('loading').innerHTML='⚠️ Apri dal server: <b>http://localhost:3000/dashboard.html</b>';
+    document.getElementById('loading').innerHTML='⚠️ Apri dal server: <b>http://localhost:3000/insights.html</b>';
   }
 });
 </script>
