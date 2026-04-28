@@ -1,0 +1,30 @@
+{
+  "output_dir": "/Users/gioooo2/vaulteq/data",
+  "sources_enabled": {
+    "google_search": true,
+    "reddit": false,
+    "youtube": false,
+    "google_news": false,
+    "pissedconsumer": false,
+    "sitejabber": false,
+    "trustpilot": false,
+    "hackernews": false,
+    "appstore": false,
+    "playstore": false,
+    "search_engines": false,
+    "web_articles": false,
+    "twitter": false,
+    "forum_it": false,
+    "forum_fr": false,
+    "forum_de": false,
+    "tiktok": false,
+    "instagram": false,
+    "quora": false,
+    "wykop": false,
+    "gutefrage": false,
+    "forocoches": false,
+    "consumeraffairs": false,
+    "mse": false,
+    "reviewsio": false
+  }
+}
