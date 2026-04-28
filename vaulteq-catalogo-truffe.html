@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Vaulteq — Catalogo Truffe</title>
+<meta name="description" content="Catalogo completo delle truffe nelle compravendite tra privati: schemi, tecniche, modus operandi. Una mappa di tutto ciò che può andare storto."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#ffffff;
+  --bg2:#f8fafc;
+  --green:#16a34a;
+  --green-soft:rgba(22,163,74,0.08);
+  --red:#dc2626;
+  --red-bg:#fef2f2;
+  --text:#0f172a;
+  --text2:#475569;
+  --text3:#94a3b8;
+  --border:rgba(0,0,0,0.08);
+  --radius:12px;
+}
+
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:64px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem;letter-spacing:-0.02em;color:var(--text);text-decoration:none}
+.nav-logo-icon{width:30px;height:30px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;color:white;font-weight:700}
+.nav-links{display:flex;align-items:center;gap:28px}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-links a.active{color:var(--green);font-weight:600}
+@media(max-width:680px){.nav-links{gap:14px}.nav-links a{font-size:.82rem}.nav{padding:0 18px}.nav-logo{font-size:1rem}}
+
+/* ── CONTAINER ── */
+.wrap{max-width:760px;margin:0 auto;padding:0 24px}
+
+/* ── HERO ── */
+.hero{
+  padding:140px 24px 60px;text-align:center;
+  background:linear-gradient(180deg,#f8fafc 0%,white 100%);
+  border-bottom:1px solid var(--border);
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--red-bg);border:1px solid rgba(220,38,38,0.25);
+  color:var(--red);font-size:.78rem;font-weight:600;
+  padding:6px 14px;border-radius:999px;margin-bottom:24px;letter-spacing:.04em;text-transform:uppercase;
+}
+.hero h1{
+  font-size:clamp(2rem,5vw,3.2rem);font-weight:800;letter-spacing:-0.02em;
+  line-height:1.1;margin-bottom:18px;
+}
+.hero p.lead{
+  font-size:clamp(1rem,2vw,1.18rem);color:var(--text2);
+  max-width:580px;margin:0 auto;font-weight:400;line-height:1.55;
+}
+
+/* ── ARTICLE ── */
+article{flex:1;padding:50px 0 80px}
+
+.section-intro{
+  color:var(--text2);font-size:.95rem;line-height:1.7;
+  margin-bottom:32px;
+}
+
+/* ── ACCORDION ── */
+.truffe-accordion{display:flex;flex-direction:column;gap:10px}
+
+details.truffa{
+  background:white;border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+  transition:all .2s;
+}
+details.truffa[open]{border-color:#cbd5e1;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+
+details.truffa summary{
+  list-style:none;cursor:pointer;
+  padding:18px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  font-weight:600;font-size:1rem;
+  user-select:none;
+}
+details.truffa summary::-webkit-details-marker{display:none}
+details.truffa summary:hover{background:var(--bg2)}
+details.truffa[open] summary{border-bottom:1px solid var(--border);background:#fafbfc}
+
+.truffa-num{
+  flex-shrink:0;
+  width:30px;height:30px;border-radius:8px;
+  background:var(--green-soft);color:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:700;
+}
+
+.truffa-title{flex:1;color:var(--text);letter-spacing:-0.01em}
+
+.accordion-arrow{
+  flex-shrink:0;
+  color:var(--text3);font-size:18px;
+  transition:transform .2s,color .2s;
+}
+details.truffa[open] .accordion-arrow{transform:rotate(180deg);color:var(--green)}
+
+.truffa-body{
+  padding:18px 22px 22px;
+  color:var(--text2);font-size:.95rem;line-height:1.7;
+}
+
+/* ── FOOTER ── */
+footer{
+  text-align:center;padding:30px 24px;background:var(--bg2);border-top:1px solid var(--border);
+  font-size:.82rem;color:var(--text3);
+}
+footer a{color:var(--text2);text-decoration:none;margin:0 10px}
+footer a:hover{color:var(--green)}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon">V</div>
+    Vaulteq
+  </a>
+  <div class="nav-links">
+    <a href="vaulteq-progetto.html">Progetto</a>
+    <a href="vaulteq-problema.html">Il Problema</a>
+    <a href="vaulteq-catalogo-truffe.html" class="active">Catalogo Truffe</a>
+    <a href="vaulteq-insights.html">Insights</a>
+    <a href="vaulteq-tam-sam-som.html">TAM/SAM/SOM</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-badge">⚠️ Catalogo</div>
+    <h1>Tutte le truffe possibili e immaginabili</h1>
+    <p class="lead">Una mappa completa degli schemi di frode nelle compravendite tra privati. Ogni truffa è descritta in 100 parole — quanto basta per riconoscerla, evitarla, raccontarla.</p>
+  </div>
+</section>
+
+<article>
+  <div class="wrap">
+    <p class="section-intro">In ordine di apparizione, dalla più comune alla più rara. Clicca su una voce per leggere il modus operandi.</p>
+
+    <div class="truffe-accordion">
+      <!-- TRUFFE: aggiungere qui sotto, una per ogni <details> -->
+
+    </div>
+  </div>
+</article>
+
+<footer>
+  <a href="index.html">Home</a>
+  <a href="vaulteq-progetto.html">Progetto</a>
+  <a href="vaulteq-problema.html">Il Problema</a>
+  <a href="vaulteq-catalogo-truffe.html">Catalogo Truffe</a>
+  <a href="vaulteq-insights.html">Insights</a>
+  <a href="vaulteq-tam-sam-som.html">TAM/SAM/SOM</a>
+  <div style="margin-top:12px">© 2026 Vaulteq</div>
+</footer>
+
+</body>
+</html>
