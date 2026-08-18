@@ -7,6 +7,7 @@ from flask import Flask, redirect, render_template, request, url_for
 
 from agenti import compila_capitolo
 from classificatore import classifica_nota
+from contenuti_iniziali import CONTENUTI_INIZIALI
 
 load_dotenv()
 
@@ -47,6 +48,14 @@ def get_db():
         )
         """
     )
+    vuoto = conn.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0
+    if vuoto:
+        oggi = date.today().isoformat()
+        conn.executemany(
+            "INSERT INTO entries (capitolo, data, testo, creato_il) VALUES (?, ?, ?, datetime('now'))",
+            [(capitolo, oggi, testo) for capitolo, testo in CONTENUTI_INIZIALI],
+        )
+        conn.commit()
     return conn
 
 
