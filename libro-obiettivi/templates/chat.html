@@ -17,15 +17,8 @@
 
 <main>
   <form method="POST" class="entry-form">
-    <label for="capitolo">Dove va questa nota?</label>
-    <select name="capitolo" id="capitolo">
-      {% for cid, meta in capitoli.items() %}
-      <option value="{{ cid }}">{{ meta.titolo }}</option>
-      {% endfor %}
-    </select>
-
     <label for="testo">Cosa vuoi aggiungere oggi?</label>
-    <textarea name="testo" id="testo" rows="6" placeholder="Scrivi qui, come in una chat..." required></textarea>
+    <textarea name="testo" id="testo" rows="6" placeholder="Scrivi qui, come in una chat... l'AI decide da sola in quale capitolo va (anche se ne tocca più di uno)." required></textarea>
 
     <button type="submit">Aggiungi al libro</button>
   </form>

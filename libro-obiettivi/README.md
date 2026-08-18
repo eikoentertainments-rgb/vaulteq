@@ -1,40 +1,50 @@
 # Il mio libro sugli obiettivi
 
-Web app minimale, gratuita, per costruire nel tempo un libro personale
-aggiungendo ogni giorno qualche riga in un'interfaccia stile chat.
+Web app minimale per costruire nel tempo un libro personale aggiungendo ogni
+giorno qualche riga in un'interfaccia stile chat. Un agente AI smista da solo
+il testo nei capitoli giusti, anche quando una nota parla di più temi insieme.
 
 ## Come funziona
 
-- **Scrivi**: nella home scegli il capitolo di destinazione e scrivi una nota,
-  come in una chat. Viene salvata con la data di oggi.
+- **Scrivi**: nella home scrivi una nota, come in una chat. Un agente AI
+  (Claude Haiku) legge il testo e decide da solo in quale capitolo va —
+  se la nota tocca più temi, la divide e la assegna a più capitoli.
 - **Leggi il libro**: la pagina `/libro` raccoglie tutte le note, capitolo per
   capitolo, in ordine cronologico.
 - I dati vengono salvati in un database SQLite locale (`data/libro.db`, escluso da git).
 
 ## Capitoli inclusi
 
-1. **Diario** — note libere del giorno, da smistare poi nei capitoli tematici.
+1. **Diario** — dove finisce tutto ciò che non rientra chiaramente negli altri capitoli.
 2. **Capitolo 1 — Chi sono** — chi sei, da dove vieni, dove vuoi andare, come.
 3. **Capitolo 2 — Insegnamenti di vita** — cosa hai imparato, cosa stai
    imparando, cosa devi ancora imparare.
 4. **Capitolo 3 — Obiettivi** — quali obiettivi, come raggiungerli, in quanto
    tempo.
 
-## Cosa sono gli "agenti" in questa versione free
+## Gli "agenti"
 
-Ogni capitolo viene compilato da una funzione in `agenti.py`
-(`compila_capitolo`): oggi è deterministica e gratuita, si limita a ordinare
-le voci per data e a calcolare un piccolo riepilogo. È il punto di innesto
-pensato per il passo successivo: quando vorrai passare a una versione con AI
-vera (per riassumere, riorganizzare o riscrivere i contenuti), basterà
-sostituire questa funzione con una chiamata a un modello — senza toccare il
-resto dell'app.
+- **Classificatore** (`classificatore.py`, funzione `classifica_nota`): ad
+  ogni nota inviata, chiama Claude Haiku per capire a quale/i capitolo/i
+  appartiene e per dividerla se è mista. Serve una `ANTHROPIC_API_KEY` (vedi
+  sotto); **senza key l'app funziona comunque**, ma ogni nota finisce intera
+  nel Diario invece di essere smistata.
+- **Compilatore** (`agenti.py`, funzione `compila_capitolo`): a lettura,
+  ordina le voci di ogni capitolo per data e calcola un riepilogo. È
+  deterministico e gratuito — nessuna chiamata AI in questo passaggio.
+
+### Costo
+
+Il classificatore usa Claude Haiku (il modello più economico), con una nota
+tipica il costo è nell'ordine di frazioni di centesimo per invio. Nessun
+costo se non imposti `ANTHROPIC_API_KEY`.
 
 ## Avvio in locale
 
 ```bash
 cd libro-obiettivi
 pip install -r requirements.txt
+cp .env.example .env   # poi inserisci la tua ANTHROPIC_API_KEY
 python app.py
 ```
 
@@ -51,6 +61,9 @@ puntato alla cartella `libro-obiettivi/`, con start command:
 python app.py
 ```
 
+e con la variabile d'ambiente `ANTHROPIC_API_KEY` impostata nel pannello
+Railway (mai committarla nel repo).
+
 **Nota sulla persistenza**: senza un volume Railway montato su `data/`, il
 database SQLite viene azzerato a ogni nuovo deploy. Per la fase di test va
 bene così; se decidi di tenerlo, aggiungi un volume persistente (o migra a un
@@ -59,8 +72,8 @@ tieni.
 
 ## Prossimi passi possibili
 
-- Aggiungere un vero step di AI in `agenti.py` per riorganizzare/riassumere
-  i contenuti invece di limitarsi a ordinarli.
 - Autenticazione (anche solo una password) prima di esporlo pubblicamente.
 - Export del libro in PDF o Word.
 - Volume persistente o database gestito per non perdere i dati ai deploy.
+- Un agente di rilettura periodica che riscrive/fonde le voci di un capitolo
+  invece di limitarsi ad affiancarle in ordine cronologico.

@@ -2,9 +2,13 @@ import os
 import sqlite3
 from datetime import date
 
+from dotenv import load_dotenv
 from flask import Flask, redirect, render_template, request, url_for
 
 from agenti import compila_capitolo
+from classificatore import classifica_nota
+
+load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "data", "libro.db")
@@ -52,14 +56,15 @@ app = Flask(__name__)
 @app.route("/", methods=["GET", "POST"])
 def chat():
     if request.method == "POST":
-        capitolo = request.form.get("capitolo", "diario")
         testo = request.form.get("testo", "").strip()
-        if testo and capitolo in CAPITOLI:
+        if testo:
+            oggi = date.today().isoformat()
             conn = get_db()
-            conn.execute(
-                "INSERT INTO entries (capitolo, data, testo, creato_il) VALUES (?, ?, ?, datetime('now'))",
-                (capitolo, date.today().isoformat(), testo),
-            )
+            for capitolo, frammento in classifica_nota(testo):
+                conn.execute(
+                    "INSERT INTO entries (capitolo, data, testo, creato_il) VALUES (?, ?, ?, datetime('now'))",
+                    (capitolo, oggi, frammento),
+                )
             conn.commit()
             conn.close()
         return redirect(url_for("chat"))
