@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Il mio libro — Scrivi oggi</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header>
+  <h1>📖 Il mio libro sugli obiettivi</h1>
+  <nav>
+    <a href="{{ url_for('chat') }}" class="active">Scrivi</a>
+    <a href="{{ url_for('libro') }}">Leggi il libro</a>
+  </nav>
+</header>
+
+<main>
+  <form method="POST" class="entry-form">
+    <label for="capitolo">Dove va questa nota?</label>
+    <select name="capitolo" id="capitolo">
+      {% for cid, meta in capitoli.items() %}
+      <option value="{{ cid }}">{{ meta.titolo }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="testo">Cosa vuoi aggiungere oggi?</label>
+    <textarea name="testo" id="testo" rows="6" placeholder="Scrivi qui, come in una chat..." required></textarea>
+
+    <button type="submit">Aggiungi al libro</button>
+  </form>
+
+  <section class="recenti">
+    <h2>Ultime voci</h2>
+    {% if not righe %}
+      <p class="vuoto">Ancora nessuna voce. Scrivi la prima!</p>
+    {% endif %}
+    {% for capitolo, data, testo in righe %}
+      <div class="voce">
+        <div class="voce-meta">{{ capitoli[capitolo].titolo }} · {{ data }}</div>
+        <div class="voce-testo">{{ testo }}</div>
+      </div>
+    {% endfor %}
+  </section>
+</main>
+</body>
+</html>

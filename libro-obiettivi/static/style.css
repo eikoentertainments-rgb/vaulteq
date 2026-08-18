@@ -1,0 +1,178 @@
+:root {
+  --bg: #faf7f2;
+  --ink: #2b2620;
+  --muted: #7a7266;
+  --accent: #8a5a3f;
+  --card: #ffffff;
+  --border: #e7ddd0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Georgia, "Iowan Old Style", serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+header {
+  padding: 1.5rem 1rem 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.4rem;
+}
+
+nav a {
+  display: inline-block;
+  margin: 0 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+}
+
+nav a.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.entry-form label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+.entry-form select,
+.entry-form textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.entry-form button {
+  margin-top: 0.75rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.entry-form button:hover {
+  opacity: 0.9;
+}
+
+.recenti {
+  margin-top: 2rem;
+}
+
+.recenti h2 {
+  font-size: 1.1rem;
+}
+
+.voce {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.voce-meta {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.voce-testo {
+  white-space: pre-wrap;
+}
+
+.vuoto {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.libro .capitolo {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.libro h2 {
+  font-size: 1.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.libro .guida {
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 0;
+}
+
+.libro .riepilogo {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.voce-libro {
+  margin-top: 1.5rem;
+}
+
+.voce-data {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.voce-libro p {
+  white-space: pre-wrap;
+  margin-top: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1a17;
+    --ink: #ece6dc;
+    --muted: #a39a8c;
+    --accent: #c88a5e;
+    --card: #262320;
+    --border: #3a352e;
+  }
+}
