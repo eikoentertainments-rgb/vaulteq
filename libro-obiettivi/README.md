@@ -8,7 +8,9 @@ il testo nei capitoli giusti, anche quando una nota parla di più temi insieme.
 
 - **Scrivi**: nella home scrivi una nota, come in una chat. Un agente AI
   (Claude Haiku) legge il testo e decide da solo in quale capitolo va —
-  se la nota tocca più temi, la divide e la assegna a più capitoli.
+  se la nota tocca più temi, la divide e la assegna a più capitoli. Le
+  frasi brevi vengono anche "decorate": riscritte in una versione più
+  distesa che sviluppa ciò che c'è dietro, senza inventare fatti non detti.
 - **Leggi il libro**: la pagina `/libro` raccoglie tutte le note, capitolo per
   capitolo, in ordine cronologico.
 - I dati vengono salvati in un database SQLite locale (`data/libro.db`, escluso da git).
@@ -26,9 +28,11 @@ il testo nei capitoli giusti, anche quando una nota parla di più temi insieme.
 
 - **Classificatore** (`classificatore.py`, funzione `classifica_nota`): ad
   ogni nota inviata, chiama Claude Haiku per capire a quale/i capitolo/i
-  appartiene e per dividerla se è mista. Serve una `ANTHROPIC_API_KEY` (vedi
-  sotto); **senza key l'app funziona comunque**, ma ogni nota finisce intera
-  nel Diario invece di essere smistata.
+  appartiene, dividerla se è mista, e riscriverla in una versione più
+  distesa quando è una frase breve — dando forma a ciò che c'è dietro senza
+  inventare fatti che l'utente non ha detto. Serve una `ANTHROPIC_API_KEY`
+  (vedi sotto); **senza key l'app funziona comunque**, ma ogni nota finisce
+  intera e invariata nel Diario invece di essere smistata e riscritta.
 - **Compilatore** (`agenti.py`, funzione `compila_capitolo`): a lettura,
   ordina le voci di ogni capitolo per data e calcola un riepilogo. È
   deterministico e gratuito — nessuna chiamata AI in questo passaggio.

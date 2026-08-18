@@ -23,33 +23,41 @@ def _client():
 
 
 def classifica_nota(testo):
-    """Divide una nota tra i capitoli pertinenti usando Claude.
+    """Smista e riscrive una nota per i capitoli pertinenti usando Claude.
 
-    Ritorna una lista di coppie (capitolo_id, testo_estratto). Senza
+    Ritorna una lista di coppie (capitolo_id, testo_riscritto). Senza
     ANTHROPIC_API_KEY, o se la chiamata fallisce per qualunque motivo,
-    l'intera nota finisce nel diario: il salvataggio non si blocca mai.
+    l'intera nota finisce nel diario così com'è: il salvataggio non si
+    blocca mai.
     """
     client = _client()
     if client is None:
         return [("diario", testo)]
 
-    prompt = f"""Sei l'assistente che organizza il libro personale di un utente.
+    prompt = f"""Sei l'assistente che scrive il libro personale di un utente, a
+partire dalle sue note quotidiane.
 Capitoli disponibili:
 {DESCRIZIONE_CAPITOLI}
 
-L'utente ha scritto questa nota:
+L'utente scrive spesso frasi brevi, che dicono poco in superficie ma
+comunicano molto in profondità. Per la nota qui sotto:
+1. individua a quali capitoli appartiene (anche più di uno, se il contenuto
+   è misto);
+2. per ciascun capitolo individuato, scrivi una versione abbellita e più
+   distesa del relativo contenuto, che dia forma e voce a ciò che c'è dietro
+   la frase breve — senza inventare fatti, nomi, eventi o dettagli che
+   l'utente non ha fornito, ma approfondendo tono, riflessione e significato.
+
+Nota dell'utente:
 \"\"\"{testo}\"\"\"
 
-Se la nota parla di più temi, dividila in più parti e assegna ciascuna al
-capitolo giusto, riportando solo porzioni del testo originale (non
-inventare, non riassumere). Se parla di un solo tema usa una sola voce.
 Rispondi SOLO con JSON in questo formato, nessun testo fuori dal JSON:
 {{"assegnazioni": [{{"capitolo": "1", "testo": "..."}}]}}"""
 
     try:
         risposta = client.messages.create(
             model=MODELLO,
-            max_tokens=1024,
+            max_tokens=2048,
             messages=[{"role": "user", "content": prompt}],
         )
         grezzo = risposta.content[0].text.strip()
